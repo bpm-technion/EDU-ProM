@@ -1,4 +1,9 @@
 package org.eduprom.Models;
+import org.processmining.contexts.cli.CLIPluginContext;
+import org.processmining.contexts.uitopia.UIContext;
+import org.processmining.contexts.uitopia.UIPluginContext;
+import org.processmining.contexts.uitopia.annotations.UITopiaVariant;
+import org.processmining.plugins.etconformance.ETCPlugin;
 
 import org.eduprom.Utils.PetrinetHelper;
 import org.processmining.plugins.petrinet.replayresult.PNRepResult;
@@ -15,11 +20,13 @@ public abstract class AbstractPetrinetModel extends AbstractModel {
 
     private PetrinetWithMarkings _petrinet;
     private PNRepResult _alignment;
+    private ETCPlugin _etc;
     protected PetrinetHelper _petrinetHelper;
 
     public AbstractPetrinetModel(String filename) throws Exception {
         super(filename);
         _petrinetHelper = new PetrinetHelper(_promPluginContext, GetClassifier());
+        _etc = new ETCPlugin();
     }
 
     @Override
@@ -49,16 +56,18 @@ public abstract class AbstractPetrinetModel extends AbstractModel {
     public double calculateNewEvaluate()throws Exception {
 
         _alignment = _petrinetHelper.getAlignment(_log, _petrinet.petrinet, _petrinet.initialMarking, _petrinet.finalMarking);
-        AlignmentPrecGenRes conformance = _petrinetHelper.getConformance(_log, _petrinet.petrinet, _alignment, _petrinet.initialMarking, _petrinet.finalMarking);
-
+//        AlignmentPrecGenRes conformance = _petrinetHelper.getConformance(_log, _petrinet.petrinet, _alignment, _petrinet.initialMarking, _petrinet.finalMarking);
+        UIContext promUIContext = new org.processmining.contexts.uitopia.UIContext();
+        UIPluginContext promUIPluginContext = promUIContext.getMainPluginContext();
+        Object[] result = _etc.doETC(promUIPluginContext,_log, _petrinet.petrinet);
         double traceFitness   = new Double(_alignment.getInfo().get(PNRepResult.TRACEFITNESS).toString());
-        double generalization = conformance.getGeneralization();
-        double precision      = conformance.getPrecision();
+//        double generalization = conformance.getGeneralization();
+//        double precision      = conformance.getPrecision();
 
-        double res = 0.5 * traceFitness + 0.2 * generalization + 0.3 * precision;
-        logger.info(String.format( "new evaluate : %f", res));
+        //double res = 0.5 * traceFitness + 0.2 * generalization + 0.3 * precision;
+        //logger.info(String.format( "new evaluate : %f", res));
 
-        return res;
+        return 1.0;
     }
 
 }
