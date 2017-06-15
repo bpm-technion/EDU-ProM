@@ -38,11 +38,27 @@ public abstract class AbstractPetrinetModel extends AbstractModel {
         logger.info("Checking conformance");
         _alignment = _petrinetHelper.getAlignment(_log, _petrinet.petrinet, _petrinet.initialMarking, _petrinet.finalMarking);
         _petrinetHelper.PrintResults(_alignment);
-
         AlignmentPrecGenRes conformance = _petrinetHelper.getConformance(_log, _petrinet.petrinet, _alignment, _petrinet.initialMarking, _petrinet.finalMarking);
         _petrinetHelper.PrintResults(conformance);
 
         double v = new PetriNetStructurednessMetric().compute(_promPluginContext, _petrinet.petrinet, _petrinet.finalMarking);
         logger.info(String.format("Structuredness: %s", v));
     }
+
+    // Q2 - PART3 : Create new evaluation
+    public double calculateNewEvaluate()throws Exception {
+
+        _alignment = _petrinetHelper.getAlignment(_log, _petrinet.petrinet, _petrinet.initialMarking, _petrinet.finalMarking);
+        AlignmentPrecGenRes conformance = _petrinetHelper.getConformance(_log, _petrinet.petrinet, _alignment, _petrinet.initialMarking, _petrinet.finalMarking);
+
+        double traceFitness   = new Double(_alignment.getInfo().get(PNRepResult.TRACEFITNESS).toString());
+        double generalization = conformance.getGeneralization();
+        double precision      = conformance.getPrecision();
+
+        double res = 0.5 * traceFitness + 0.2 * generalization + 0.3 * precision;
+        logger.info(String.format( "new evaluate : %f", res));
+
+        return res;
+    }
+
 }

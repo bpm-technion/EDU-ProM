@@ -13,6 +13,9 @@ public class Trace {
     public String FullTrace;
     public String[] Activities;
 
+    public XTrace getXTrace ()throws Exception{
+        return _trace;
+    }
     public Trace(XTrace trace) throws Exception
     {
     	_trace = trace;
