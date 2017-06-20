@@ -24,6 +24,10 @@ public class Alpha extends AbstractPetrinetModel {
         super(filename);
     }
 
+    public Alpha(XLog log, String filename) throws Exception {
+        super(log, filename);
+    }
+
     @Override
     protected ProcessTree2Petrinet.PetrinetWithMarkings TrainPetrinet() throws Exception {
         Pair<Petrinet, Marking> runResult = Mine(_log);

@@ -4,8 +4,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Iterator;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -116,10 +115,11 @@ public class LogHelper {
     	}
     }
 
-	public void HandleIncompleteTraces(XLog log) throws Exception{
-
+	public XLog HandleIncompleteTraces(XLog log) throws Exception{
+		HashMap<String, Double> percentOfTraces = new HashMap<String, Double>();
 		TraceHelper _traceHelper = new TraceHelper();
 		Iterator<XTrace> iterTraces = log.iterator();
+		double percentLeft = 0.2;
 
 		// Get the Traces
 		while (iterTraces.hasNext()) {
@@ -127,8 +127,48 @@ public class LogHelper {
 			_traceHelper.Add(t);
 		}
 
+		for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
+			for ( Map.Entry<Trace, Integer> secondTrace : _traceHelper.Traces.entrySet()) {
+				if (trace.getKey().FullTrace.contains(secondTrace.getKey().FullTrace) && !trace.getKey().FullTrace.equals(secondTrace.getKey().FullTrace) ){
+					System.out.print(trace.getKey().FullTrace + "\n");
+					System.out.print(secondTrace.getKey().FullTrace + "\n");
+				}
+			}
+		}
 
+		double minPercentTrace = 1;
+		String minActivity = null;
+		for ( Map.Entry<String, ArrayList<XTrace>> trace : _traceHelper.finalActivities.entrySet()) {
+			double percentOfTrace = trace.getValue().size() / (double)log.size();
+			percentOfTraces.putIfAbsent(trace.getKey(),percentOfTrace);
+			if (percentOfTrace < minPercentTrace){
+				minPercentTrace = percentOfTrace;
+				minActivity = trace.getKey();
+			}
+		}
+		percentLeft = percentLeft - minPercentTrace;
+		while (percentLeft > 0) {
 
+			// remove the trace from the log
+			for ( XTrace itemXtrace : _traceHelper.finalActivities.get(minActivity) ){
+				if (itemXtrace.size() < 14) {
+					log.remove(itemXtrace);
+				}
+			}
+			_traceHelper.finalActivities.remove(minActivity);
+			percentOfTraces.remove(minActivity);
+
+			minPercentTrace = 1;
+			for (Map.Entry<String, Double> activity : percentOfTraces.entrySet()) {
+				double valueOfPercent = activity.getValue();
+				if (valueOfPercent < minPercentTrace) {
+					minPercentTrace = valueOfPercent;
+					minActivity = activity.getKey();
+				}
+			}
+			percentLeft = percentLeft - minPercentTrace;
+		}
+		return log;
 	}
 
 	public void PrintLog(Level level, XLog log){

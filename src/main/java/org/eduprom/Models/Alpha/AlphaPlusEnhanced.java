@@ -2,6 +2,7 @@ package org.eduprom.Models.Alpha;
 
 
 import net.sf.saxon.expr.flwor.Tuple;
+import org.deckfour.xes.model.XLog;
 import org.deckfour.xes.model.XTrace;
 import org.eduprom.Entities.Trace;
 import org.processmining.framework.util.Pair;
@@ -26,7 +27,10 @@ public class AlphaPlusEnhanced extends AlphaPlus{
         super(filename);
         _log = _logHelper.Read(_filename);
     }
-
+    public AlphaPlusEnhanced(XLog log, String filename) throws Exception {
+        super(log,filename);
+       // _log = _logHelper.Read(_filename);
+    }
     @Override
     protected ProcessTree2Petrinet.PetrinetWithMarkings TrainPetrinet() throws Exception {
         Iterator<XTrace> iterTraces = _log.iterator();

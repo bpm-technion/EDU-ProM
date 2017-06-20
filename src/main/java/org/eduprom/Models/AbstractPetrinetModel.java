@@ -1,5 +1,6 @@
 package org.eduprom.Models;
 
+import org.deckfour.xes.model.XLog;
 import org.eduprom.Utils.PetrinetHelper;
 import org.processmining.plugins.petrinet.replayresult.PNRepResult;
 import org.processmining.plugins.pnalignanalysis.conformance.AlignmentPrecGenRes;
@@ -19,6 +20,11 @@ public abstract class AbstractPetrinetModel extends AbstractModel {
 
     public AbstractPetrinetModel(String filename) throws Exception {
         super(filename);
+        _petrinetHelper = new PetrinetHelper(_promPluginContext, GetClassifier());
+    }
+
+    public AbstractPetrinetModel(XLog log, String filename) throws Exception {
+        super(log, filename);
         _petrinetHelper = new PetrinetHelper(_promPluginContext, GetClassifier());
     }
 

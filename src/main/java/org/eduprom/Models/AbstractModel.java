@@ -80,6 +80,18 @@ public abstract class AbstractModel implements IModel {
         _logHelper.CheckFile(filename);
     }
 
+    public AbstractModel(XLog log, String filename) throws Exception
+    {
+        _trained = false;
+        _name = getClass().getSimpleName();
+        _filename = filename;
+        _logHelper = new LogHelper();
+        _traceHelper = new TraceHelper();
+        _promContext = new org.processmining.contexts.cli.CLIContext();
+        _promPluginContext = new CLIPluginContext(_promContext, GetName());
+        _log = log;
+//        _logHelper.CheckFile(filename);
+    }
     @Override
     public String GetName() {
         return _name;

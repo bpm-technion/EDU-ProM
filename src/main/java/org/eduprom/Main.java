@@ -44,30 +44,43 @@ public class Main {
 
 			if (filename.contains("log1.xes")) //  incomplete traces
 			{
-				_logHelper.HandleIncompleteTraces(_log);
+				XLog finalLog = _logHelper.HandleIncompleteTraces(_log);
 //
-				InductiveMiner inductiveModel = new InductiveMiner(filename, (float)0.05);
+				InductiveMiner inductiveModel = new InductiveMiner(finalLog, filename,0);
 				inductiveModel.Train();
 				inductiveModel.Export();
 //				double = 0.5 * fitness + 0.25 * precision + 0.25 * generalization
 
-				InductiveMiner inductiveModel5 = new InductiveMiner(filename,(float)0.1);
-				inductiveModel5.Train();
-				inductiveModel5.Export();
+//				InductiveMiner inductiveModel5 = new InductiveMiner(filename,(float)0.1);
+//				inductiveModel5.Train();
+//				inductiveModel5.Export();
 
-				AlphaPlusPlus alphaModel = new AlphaPlusPlus(filename);
-				alphaModel.Train();
-				alphaModel.Export();
-				alphaModel.Evaluate();
+//				AlphaPlusPlus alphaModel = new AlphaPlusPlus(finalLog,filename);
+//				alphaModel.Train();
+//				alphaModel.Export();
+//				alphaModel.Evaluate();
+
+//				AlphaPlusEnhanced alphaModel = new AlphaPlusEnhanced(finalLog,filename);
+//				alphaModel.Train();
+//				alphaModel.Export();
+//				alphaModel.Evaluate();
 			}
 			else if (filename.contains("log2.xes")) // incomplete traces
 			{
-				_logHelper.HandleIncompleteTraces(_log);
+				XLog finalLog = _logHelper.HandleIncompleteTraces(_log);
+				InductiveMiner inductiveModel = new InductiveMiner(filename,0);
+				inductiveModel.Train();
+				inductiveModel.Export();
+
+//				AlphaPlusPlus alphaModel = new AlphaPlusPlus(finalLog,filename);
+//				alphaModel.Train();
+//				alphaModel.Export();
+//				alphaModel.Evaluate();
 
 			}
 			else if (filename.contains("log3.xes"))
 			{
-
+				_logHelper.HandleIncompleteTraces(_log);
 			}
 			else if (filename.contains("log4.xes"))
 			{
@@ -97,28 +110,7 @@ public class Main {
 			{
 
 			}
-            //AlphaPlusEnhanced
-//			AlphaPlusEnhanced model = new AlphaPlusEnhanced(filename);
-//          AlphaPlus model = new AlphaPlus(filename);
 
-            //ModelComparison
-//            IModel modelIM = new InductiveMiner(filename);
-//			modelIM.Train();
-//			double inductiveMinerEvaluate = modelIM.calculateNewEvaluate();
-
-//			AlphaPlus modelAlpha = new AlphaPlus(filename);
-//			modelAlpha.Train();
-//			double alphaEvaluate = modelAlpha.calculateNewEvaluate();
-
-//			if(inductiveMinerEvaluate > alphaEvaluate){
-//				modelIM.Export();
-//			} else{
-//				modelAlpha.Export();
-//			}
-
-//			model.Train();
-//        	model.Export();
-//			model.Evaluate();
 
         } catch (Exception ex) {
         	logger.log(Level.SEVERE, "exception when trying to train/evaluate the model", ex);
