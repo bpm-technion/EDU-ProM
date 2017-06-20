@@ -1,11 +1,8 @@
 package org.eduprom.Models;
 
-import org.deckfour.xes.model.XLog;
 import org.processmining.plugins.InductiveMiner.mining.*;
 import org.processmining.plugins.InductiveMiner.plugins.IMPetriNet;
-
 import org.processmining.models.graphbased.directed.petrinet.impl.PetrinetImpl;
-
 import org.processmining.models.semantics.petrinet.Marking;
 import org.processmining.plugins.InductiveMiner.plugins.IMProcessTree;
 import org.processmining.processtree.ProcessTree;
@@ -17,7 +14,11 @@ public class InductiveMiner extends AbstractPetrinetModel {
 		super(filename);
 		_parameters = new MiningParametersIM();
 	}
-
+	public InductiveMiner(String filename, float threshold) throws Exception {
+		super(filename);
+		_parameters = new MiningParametersIM();
+		_parameters.setNoiseThreshold(threshold);
+	}
 	private MiningParametersIM _parameters;
 
 	@Override

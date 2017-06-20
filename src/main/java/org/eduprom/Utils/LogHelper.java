@@ -5,10 +5,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.deckfour.xes.model.XTrace;
 import org.eduprom.Entities.Trace;
 import org.apache.commons.io.FilenameUtils;
 import org.deckfour.xes.in.XUniversalParser;
@@ -113,6 +115,21 @@ public class LogHelper {
     		throw new Exception("the given file extention isn't supported");
     	}
     }
+
+	public void HandleIncompleteTraces(XLog log) throws Exception{
+
+		TraceHelper _traceHelper = new TraceHelper();
+		Iterator<XTrace> iterTraces = log.iterator();
+
+		// Get the Traces
+		while (iterTraces.hasNext()) {
+			Trace t = new Trace(iterTraces.next());
+			_traceHelper.Add(t);
+		}
+
+
+
+	}
 
 	public void PrintLog(Level level, XLog log){
 		String s = log.stream().map(x -> {
