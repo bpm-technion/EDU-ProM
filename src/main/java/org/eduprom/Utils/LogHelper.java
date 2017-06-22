@@ -126,48 +126,54 @@ public class LogHelper {
 			Trace t = new Trace(iterTraces.next());
 			_traceHelper.Add(t);
 		}
-
+//		int i = 0;
 		for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
 			for ( Map.Entry<Trace, Integer> secondTrace : _traceHelper.Traces.entrySet()) {
-				if (trace.getKey().FullTrace.contains(secondTrace.getKey().FullTrace) && !trace.getKey().FullTrace.equals(secondTrace.getKey().FullTrace) ){
+				if (trace.getKey().FullTrace.startsWith(secondTrace.getKey().FullTrace) && ! (trace.getKey().FullTrace.equals(secondTrace.getKey().FullTrace)) ){
 					System.out.print(trace.getKey().FullTrace + "\n");
 					System.out.print(secondTrace.getKey().FullTrace + "\n");
+					for ( XTrace itemXtrace : _traceHelper.ListOfXTraces.get(secondTrace.getKey()) ){
+						log.remove(itemXtrace);
+						_traceHelper.Traces.remove(itemXtrace);
+					}
+//					++i;
 				}
 			}
 		}
 
-		double minPercentTrace = 1;
-		String minActivity = null;
-		for ( Map.Entry<String, ArrayList<XTrace>> trace : _traceHelper.finalActivities.entrySet()) {
-			double percentOfTrace = trace.getValue().size() / (double)log.size();
-			percentOfTraces.putIfAbsent(trace.getKey(),percentOfTrace);
-			if (percentOfTrace < minPercentTrace){
-				minPercentTrace = percentOfTrace;
-				minActivity = trace.getKey();
-			}
-		}
-		percentLeft = percentLeft - minPercentTrace;
-		while (percentLeft > 0) {
-
-			// remove the trace from the log
-			for ( XTrace itemXtrace : _traceHelper.finalActivities.get(minActivity) ){
-				if (itemXtrace.size() < 14) {
-					log.remove(itemXtrace);
-				}
-			}
-			_traceHelper.finalActivities.remove(minActivity);
-			percentOfTraces.remove(minActivity);
-
-			minPercentTrace = 1;
-			for (Map.Entry<String, Double> activity : percentOfTraces.entrySet()) {
-				double valueOfPercent = activity.getValue();
-				if (valueOfPercent < minPercentTrace) {
-					minPercentTrace = valueOfPercent;
-					minActivity = activity.getKey();
-				}
-			}
-			percentLeft = percentLeft - minPercentTrace;
-		}
+//		double minPercentTrace = 1;
+//		String minActivity = null;
+//		for ( Map.Entry<String, ArrayList<XTrace>> trace : _traceHelper.finalActivities.entrySet()) {
+//			double percentOfTrace = trace.getValue().size() / (double)log.size();
+//			percentOfTraces.putIfAbsent(trace.getKey(),percentOfTrace);
+//			if (percentOfTrace < minPercentTrace){
+//				minPercentTrace = percentOfTrace;
+//				minActivity = trace.getKey();
+//			}
+//		}
+//		percentLeft = percentLeft - minPercentTrace;
+//		while (percentLeft > 0) {
+//
+//			// remove the trace from the log
+//			for ( XTrace itemXtrace : _traceHelper.finalActivities.get(minActivity) ){
+//				if (itemXtrace.size() < 14) {
+//					log.remove(itemXtrace);
+//				}
+//			}
+//			_traceHelper.finalActivities.remove(minActivity);
+//			percentOfTraces.remove(minActivity);
+//
+//			minPercentTrace = 1;
+//			for (Map.Entry<String, Double> activity : percentOfTraces.entrySet()) {
+//				double valueOfPercent = activity.getValue();
+//				if (valueOfPercent < minPercentTrace) {
+//					minPercentTrace = valueOfPercent;
+//					minActivity = activity.getKey();
+//				}
+//			}
+//			percentLeft = percentLeft - minPercentTrace;
+//		}
+		System.out.print(log.size());
 		return log;
 	}
 
