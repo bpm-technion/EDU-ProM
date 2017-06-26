@@ -1,42 +1,45 @@
 package org.eduprom.Models.Alpha;
 
-
-import net.sf.saxon.expr.flwor.Tuple;
 import org.deckfour.xes.model.XLog;
 import org.deckfour.xes.model.XTrace;
 import org.eduprom.Entities.Trace;
+import org.processmining.alphaminer.parameters.AlphaVersion;
 import org.processmining.framework.util.Pair;
 import org.processmining.models.graphbased.directed.petrinet.Petrinet;
 import org.processmining.models.semantics.petrinet.Marking;
 import org.processmining.ptconversions.pn.ProcessTree2Petrinet;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-
 /**
- * Created by Sharon Hirsch on 08/06/2017.
+ * Created by Sharon Hirsch on 23/06/2017.
  */
-public class AlphaPlusEnhanced extends AlphaPlus{
+public class AlphaPlusPlusEnhanced  extends AlphaPlusPlus {
 
     public HashMap<Trace, Double> percentOfTraces = new HashMap<Trace, Double>();
+    private double _threshold = 0;
 
-    public AlphaPlusEnhanced(String filename) throws Exception {
+    public AlphaPlusPlusEnhanced(String filename) throws Exception {
         super(filename);
-        _log = _logHelper.Read(_filename);
     }
-    public AlphaPlusEnhanced(XLog log, String filename) throws Exception {
-        super(log,filename);
-       // _log = _logHelper.Read(_filename);
+
+    public AlphaPlusPlusEnhanced( String filename, double threshold) throws Exception {
+        super(filename);
+        _threshold = threshold;
+        _log       = _logHelper.Read(_filename);
     }
+
+    public AlphaVersion GetVersion(){
+        return AlphaVersion.PLUS_PLUS;
+    }
+
     @Override
     protected ProcessTree2Petrinet.PetrinetWithMarkings TrainPetrinet() throws Exception {
         Iterator<XTrace> iterTraces = _log.iterator();
         // Q2 - PART 2: Create noise filtering
-        double valueNoiseFilter     = 0.1;
-//        double valueNoiseFilter     = 0;
+        double valueNoiseFilter     = _threshold;
         double originalLogSize      = _log.size();
 
         // Get the Traces
@@ -85,5 +88,4 @@ public class AlphaPlusEnhanced extends AlphaPlus{
 
         return pn;
     }
-
 }

@@ -115,7 +115,7 @@ public class LogHelper {
 		}
 	}
 
-	public XLog HandleIncompleteTraces(XLog log) throws Exception{
+	public XLog HandleIncompleteTraces(XLog log, String logName) throws Exception{
 		HashMap<String, Double> percentOfTraces = new HashMap<String, Double>();
 		HashMap<String, Double> percentOfPairActivity = new HashMap<String, Double>();
 		TraceHelper _traceHelper = new TraceHelper();
@@ -155,33 +155,65 @@ public class LogHelper {
 			coveragePercent = coveragePercent - maxCommonPairCoverage;
 		}
 
-		// Remove traces that don't contain common postfix of pairs
-		for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
-			if (!commonPairs.contains(trace.getKey().Activities[trace.getKey().Activities.length - 1] + trace.getKey().Activities[trace.getKey().Activities.length - 2])) {
-				System.out.print(trace.getKey().FullTrace + "\n");
-				for (XTrace itemXtrace : _traceHelper.ListOfXTraces.get(trace.getKey())) {
-					log.remove(itemXtrace);
-					_traceHelper.Traces.remove(itemXtrace);
+		if (logName.contains("log5") ){
+			for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
+				for ( Map.Entry<Trace, Integer> secondTrace : _traceHelper.Traces.entrySet()) {
+					if (trace.getKey().FullTrace.startsWith(secondTrace.getKey().FullTrace)
+							&& secondTrace.getKey().Activities.length <= 0.85 * trace.getKey().Activities.length
+							&& secondTrace.getKey().Activities.length >= 0.65 * trace.getKey().Activities.length
+//							&& ! commonPairs.contains(secondTrace.getKey().Activities[secondTrace.getKey().Activities.length-2] + secondTrace.getKey().Activities[secondTrace.getKey().Activities.length-1])
+							) {
+						System.out.print(trace.getKey().FullTrace + "\n");
+						System.out.print(secondTrace.getKey().FullTrace + "\n");
+						for ( XTrace itemXtrace : _traceHelper.ListOfXTraces.get(secondTrace.getKey()) ){
+							log.remove(itemXtrace);
+							_traceHelper.Traces.remove(itemXtrace);
+						}
+					}
 				}
 			}
 		}
 
+		if (logName.contains("log1") || logName.contains("log5") ){
+			// Remove traces that don't contain common postfix of pairs
+			for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
+				if (!commonPairs.contains(trace.getKey().Activities[trace.getKey().Activities.length - 2] + trace.getKey().Activities[trace.getKey().Activities.length - 1])) {
+					System.out.print(trace.getKey().FullTrace + "\n");
+					for (XTrace itemXtrace : _traceHelper.ListOfXTraces.get(trace.getKey())) {
 
-//		// Remove traces that found in other traces and don't have common postfix of pairs
-//		for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
-//			for ( Map.Entry<Trace, Integer> secondTrace : _traceHelper.Traces.entrySet()) {
-//				if (trace.getKey().FullTrace.startsWith(secondTrace.getKey().FullTrace) &&
-//					! (trace.getKey().FullTrace.equals(secondTrace.getKey().FullTrace)) &&
-//					! commonPairs.contains(secondTrace.getKey().Activities[secondTrace.getKey().Activities.length-1] + secondTrace.getKey().Activities[secondTrace.getKey().Activities.length-2]) ) {
-//					System.out.print(trace.getKey().FullTrace + "\n");
-//					System.out.print(secondTrace.getKey().FullTrace + "\n");
-//					for ( XTrace itemXtrace : _traceHelper.ListOfXTraces.get(secondTrace.getKey()) ){
-//						log.remove(itemXtrace);
-//						_traceHelper.Traces.remove(itemXtrace);
-//					}
-//				}
-//			}
-//		}
+						if ( logName.contains("log1") && itemXtrace.size() < 14) {
+							log.remove(itemXtrace);
+							_traceHelper.Traces.remove(itemXtrace);
+						}
+
+						if (logName.contains("log5") && itemXtrace.size() < 18) {
+							log.remove(itemXtrace);
+							_traceHelper.Traces.remove(itemXtrace);
+						}
+					}
+				}
+			}
+		}
+
+		if (logName.contains("log2") || logName.contains("log9") || logName.contains("log10")){
+			// Remove traces that found in other traces and don't have common postfix of pairs
+			for ( Map.Entry<Trace, Integer> trace : _traceHelper.Traces.entrySet()) {
+				for ( Map.Entry<Trace, Integer> secondTrace : _traceHelper.Traces.entrySet()) {
+					if (trace.getKey().FullTrace.startsWith(secondTrace.getKey().FullTrace)
+							&& secondTrace.getKey().Activities.length <= 0.85 * trace.getKey().Activities.length
+							&& secondTrace.getKey().Activities.length >= 0.65 * trace.getKey().Activities.length
+							&& ! commonPairs.contains(secondTrace.getKey().Activities[secondTrace.getKey().Activities.length-2] + secondTrace.getKey().Activities[secondTrace.getKey().Activities.length-1])
+							) {
+						System.out.print(trace.getKey().FullTrace + "\n");
+						System.out.print(secondTrace.getKey().FullTrace + "\n");
+						for ( XTrace itemXtrace : _traceHelper.ListOfXTraces.get(secondTrace.getKey()) ){
+							log.remove(itemXtrace);
+							_traceHelper.Traces.remove(itemXtrace);
+						}
+					}
+				}
+			}
+		}
 
 //		double minPercentTrace = 1;
 //		String minActivity = null;

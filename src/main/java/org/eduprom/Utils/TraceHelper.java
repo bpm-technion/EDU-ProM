@@ -59,12 +59,12 @@ public class TraceHelper  {
 //		}
 
 		//fill twoFinalActivities hash map
-		if (twoFinalActivities.containsKey(t.Activities[t.Activities.length-1] + t.Activities[t.Activities.length-2])){
-			twoFinalActivities.get(t.Activities[t.Activities.length-1] + t.Activities[t.Activities.length-2]).add(t.getXTrace());
+		if (twoFinalActivities.containsKey(t.Activities[t.Activities.length-2] + t.Activities[t.Activities.length-1])){
+			twoFinalActivities.get(t.Activities[t.Activities.length-2] + t.Activities[t.Activities.length-1]).add(t.getXTrace());
 		}
 		else {
-			twoFinalActivities.putIfAbsent(t.Activities[t.Activities.length-1] + t.Activities[t.Activities.length-2], new ArrayList<XTrace>());
-			twoFinalActivities.get(t.Activities[t.Activities.length-1] + t.Activities[t.Activities.length-2] ).add(t.getXTrace());
+			twoFinalActivities.putIfAbsent(t.Activities[t.Activities.length-2] + t.Activities[t.Activities.length-1], new ArrayList<XTrace>());
+			twoFinalActivities.get(t.Activities[t.Activities.length-2] + t.Activities[t.Activities.length-1]).add(t.getXTrace());
 		}
 	}
 	
