@@ -47,4 +47,6 @@ public class Trace {
     public int hashCode() {
         return FullTrace.hashCode();
     }
+    public XTrace getXTrace(){return _trace;}
+
 }
