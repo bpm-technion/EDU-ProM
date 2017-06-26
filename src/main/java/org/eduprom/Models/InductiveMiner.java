@@ -25,7 +25,7 @@ public class InductiveMiner extends AbstractPetrinetModel {
 	protected PetrinetWithMarkings TrainPetrinet() throws Exception {
 		logger.info("Started mining a petri nets using inductive miner");
 
-		// Q1: Set the noise threshold for the log
+		// Q2 PART 1: Set the noise threshold for the log
 //		_parameters.setNoiseThreshold(0);
 //		_parameters.setNoiseThreshold(10);
 		Object[] res = IMPetriNet.minePetriNet(_log, _parameters, _canceller);
