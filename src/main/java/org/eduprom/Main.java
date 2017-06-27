@@ -21,14 +21,14 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 
-//    	String filename = "EventLogs\\log1.xes";
+    	String filename = "EventLogs\\log1.xes";
 //		String filename = "EventLogs\\log2.xes";
 //		String filename = "EventLogs\\log3.xes";
 //		String filename = "EventLogs\\log4.xes";
 //		String filename = "EventLogs\\log5.xes";
 //		String filename = "EventLogs\\log6.xes";
 //		String filename = "EventLogs\\log7.xes";
-		String filename = "EventLogs\\log8.xes";
+//		String filename = "EventLogs\\log8.xes";
 //		String filename = "EventLogs\\log9.xes";
 //		String filename = "EventLogs\\log10.xes";
 
@@ -46,6 +46,7 @@ public class Main {
 				InductiveMiner inductiveModel = new InductiveMiner(finalLog, filename,0);
 				inductiveModel.Train();
 				inductiveModel.Export();
+				inductiveModel.calculateNewEvaluate();
 
 				AlphaPlusPlus alphaModel = new AlphaPlusPlus(finalLog,filename);
 				alphaModel.Train();
@@ -66,6 +67,7 @@ public class Main {
 				alphaModel.Train();
 				alphaModel.Export();
 				alphaModel.Evaluate();
+
 				// TODO : check evaluation measures
 			}
 			else if (filename.contains("log5.xes")) // incomplete traces

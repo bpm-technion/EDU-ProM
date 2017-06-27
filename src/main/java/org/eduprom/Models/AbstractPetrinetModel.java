@@ -2,12 +2,14 @@ package org.eduprom.Models;
 
 import org.deckfour.xes.model.XLog;
 import org.eduprom.Utils.PetrinetHelper;
+import org.processmining.generalizedconformance.algorithms.miner.QualityCriterion;
 import org.processmining.plugins.petrinet.replayresult.PNRepResult;
 import org.processmining.plugins.pnalignanalysis.conformance.AlignmentPrecGenRes;
 import org.processmining.pnanalysis.metrics.impl.PetriNetStructurednessMetric;
-
+import org.processmining.generalizedconformance.Utils;
 import static org.processmining.ptconversions.pn.ProcessTree2Petrinet.PetrinetWithMarkings;
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Created by ydahari on 4/15/2017.
@@ -54,9 +56,9 @@ public abstract class AbstractPetrinetModel extends AbstractModel {
     // Q2 - PART3 : Create new evaluation
     public double calculateNewEvaluate()throws Exception {
 
-        _alignment = _petrinetHelper.getAlignment(_log, _petrinet.petrinet, _petrinet.initialMarking, _petrinet.finalMarking);
-
-        double traceFitness = new Double(_alignment.getInfo().get(PNRepResult.TRACEFITNESS).toString());
+//        _alignment = _petrinetHelper.getAlignment(_log, _petrinet.petrinet, _petrinet.initialMarking, _petrinet.finalMarking);
+        Map<QualityCriterion, Object> reasults = Utils.getDistance(_petrinet, _log);
+//        double traceFitness = new Double(_alignment.getInfo().get(PNRepResult.TRACEFITNESS).toString());
 //        double generalization = conformance.getGeneralization();
 //        double precision      = conformance.getPrecision();
 
