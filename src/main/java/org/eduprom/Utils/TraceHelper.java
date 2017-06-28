@@ -35,6 +35,7 @@ public class TraceHelper  {
 	 * @param t A trace to add. 
 	 */
 	synchronized public void Add(Trace t) throws Exception{
+
 		System.out.print(t.Activities.length +" "+t.Activities[t.Activities.length-1]+ "\n");
 		if (Traces.containsKey(t)){
 			Integer value = Traces.get(t);
