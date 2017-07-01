@@ -1,12 +1,10 @@
 package org.eduprom;
 
 import org.deckfour.xes.model.XLog;
-import org.eduprom.Models.Alpha.AlphaPlusPlus;
-import org.eduprom.Models.Alpha.AlphaPlusPlusEnhanced;
-import org.eduprom.Models.IModel;
-import org.eduprom.Models.InductiveMiner;
+import org.eduprom.Miners.InductiveMiner;
+import org.eduprom.Miners.Alpha.AlphaPlusPlus;
+import org.eduprom.Miners.Alpha.AlphaPlusPlusEnhanced;
 import org.eduprom.Utils.LogHelper;
-import org.eduprom.Utils.TraceHelper;
 
 import java.io.FileInputStream;
 import java.util.logging.Level;
@@ -21,7 +19,7 @@ public class Main {
 
 	public static void main(String[] args) throws Exception {
 
-//    	String filename = "EventLogs\\log1.xes";
+    	String filename = "EventLogs\\log1.xes";
 //		String filename = "EventLogs\\log2.xes";
 //		String filename = "EventLogs\\log3.xes";
 //		String filename = "EventLogs\\log4.xes";
@@ -30,7 +28,7 @@ public class Main {
 //		String filename = "EventLogs\\log7.xes";
 //		String filename = "EventLogs\\log8.xes";
 //		String filename = "EventLogs\\log9.xes";
-		String filename = "EventLogs\\log10.xes";
+//		String filename = "EventLogs\\log10.xes";
 
 		logManager.readConfiguration(new FileInputStream("./app.properties"));
 		logger.info("started application");

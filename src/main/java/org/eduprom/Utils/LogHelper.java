@@ -5,6 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -92,7 +93,6 @@ public class LogHelper {
 
 		return logs.iterator().next();
 	}
-
 
 	/**
 	 * Loads a csv/xes file to an in-memory object compatible with ProM algorithms
@@ -251,7 +251,7 @@ public class LogHelper {
 		return log;
 	}
 
-	public void PrintLog(Level level, XLog log){
+	public String toString(XLog log){
 		String s = log.stream().map(x -> {
 			try {
 				return new Trace(x).FullTrace;
@@ -260,7 +260,29 @@ public class LogHelper {
 				return null;
 			}
 		}).filter(x->x != null).collect (Collectors.joining (","));
+		return s;
+	}
 
+	public void PrintLog(Level level, XLog log){
+		String s = toString(log);
+		logger.log(level, String.format("Log: %s", s));
+	}
+
+	public void PrintLogGrouped(Level level, XLog log){
+
+		Map<String, Long> s =
+				log.stream().map(x -> {
+					try {
+						return new Trace(x).FullTrace;
+					} catch (Exception e) {
+						e.printStackTrace();
+						return null;
+					}
+				}).filter(x->x != null).collect(
+						Collectors.groupingBy(
+								Function.identity(), Collectors.counting()
+						)
+				);
 		logger.log(level, String.format("Log: %s", s));
 	}
 }
