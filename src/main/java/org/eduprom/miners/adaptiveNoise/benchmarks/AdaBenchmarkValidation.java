@@ -9,13 +9,12 @@ import org.eduprom.benchmarks.IBenchmark;
 import org.eduprom.benchmarks.IBenchmarkableMiner;
 import org.eduprom.benchmarks.configuration.Weights;
 import org.eduprom.entities.CrossValidationPartition;
-import org.eduprom.exceptions.ConformanceCheckException;
 import org.eduprom.exceptions.ExportFailedException;
 import org.eduprom.exceptions.LogFileNotFoundException;
 import org.eduprom.exceptions.MiningException;
 import org.eduprom.exceptions.ParsingException;
 import org.eduprom.miners.AbstractMiner;
-import org.eduprom.miners.adaptiveNoise.AdaMiner;
+import org.eduprom.miners.adaptiveNoise.AdaMinerValidation;
 import org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner;
 import org.eduprom.miners.adaptiveNoise.IntermediateMiners.NoiseInductiveMiner;
 import org.eduprom.miners.adaptiveNoise.conformance.ConformanceInfo;
@@ -32,6 +31,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -40,10 +40,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-import static org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner.FITNESS_KEY;
 import static org.processmining.plugins.petrinet.replayresult.PNRepResult.TRACEFITNESS;
 
-public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInductiveMiner> {
+public class AdaBenchmarkValidation implements IBenchmark<AdaptiveNoiseMiner, NoiseInductiveMiner> {
 
     protected static final Logger logger = Logger.getLogger(AbstractMiner.class.getName());
     static final String FITNESS_KEY = TRACEFITNESS;
@@ -78,7 +77,7 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
         info.setPrecision(precision);
 
         PNRepResult genAlignment = petrinetHelper.getAlignment(validationLog, res.petrinet, res.initialMarking, res.finalMarking);
-        double generalization = Double.parseDouble(alignment.getInfo().get(FITNESS_KEY).toString());
+        double generalization = Double.parseDouble(genAlignment.getInfo().get(FITNESS_KEY).toString());
         info.setGeneralization(generalization);
 
 
@@ -88,30 +87,16 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
         return info;
     }
 
-    public static ConformanceInfo getPsi(PetrinetHelper petrinetHelper, ProcessTree processTree, XLog trainingLog, Weights weights) throws MiningException {
-        ConformanceInfo info = new ConformanceInfo(weights);
-        ProcessTree2Petrinet.PetrinetWithMarkings res = PetrinetHelper.ConvertToPetrinet(processTree);
-        PNRepResult alignment = petrinetHelper.getAlignment(trainingLog, res.petrinet, res.initialMarking, res.finalMarking);
-        double fitness = Double.parseDouble(alignment.getInfo().get(FITNESS_KEY).toString());
-        //this.petrinetHelper.printResults(alignment);
-        info.setFitness(fitness);
-
-        AlignmentPrecGenRes alignmentPrecGenRes = petrinetHelper.getConformance(trainingLog, res.petrinet, alignment, res.initialMarking, res.finalMarking);
-        info.setPrecision(alignmentPrecGenRes.getPrecision());
-        info.setGeneralization(alignmentPrecGenRes.getGeneralization());
-        return info;
-    }
-
-    public AdaBenchmark(AdaptiveNoiseBenchmarkConfiguration adaptiveNoiseBenchmarkConfiguration, int testSize){
+    public AdaBenchmarkValidation(AdaptiveNoiseBenchmarkConfiguration adaptiveNoiseBenchmarkConfiguration, int testSize){
         this.adaptiveNoiseBenchmarkConfiguration = adaptiveNoiseBenchmarkConfiguration;
         this.logHelper = new LogHelper();
         this.testSize = testSize;
-        //String format = "./Output/%s.csv";
-        //this.path = String.format(format, this.getName());
+        String format = "./Output/%s.csv";
+        this.path = String.format(format, this.getName());
         this.runId = UUID.randomUUID();
-        String format = "./Output/%s-%s.csv";
-        this.path = String.format(format, this.getName(),
-                new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date()));
+        //String format = "./Output/%s-%s.csv";
+        //this.path = String.format(format, this.getName(),
+        //        new SimpleDateFormat("yyyy-MM-dd HH-mm-ss").format(new Date()));
     }
 
     @Override
@@ -134,14 +119,15 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
     protected BenchmarkLogs getBenchmarkLogs(String filename) throws ParsingException {
         XLog log = logHelper.read(filename);
 
-
         List<CrossValidationPartition> origin =  this.logHelper.crossValidationSplit(log, testSize);
-        CrossValidationPartition[] validationPartitions = CrossValidationPartition.take(origin, 1);
-        origin = CrossValidationPartition.exclude(origin, validationPartitions);
+        CrossValidationPartition[] testPartition = CrossValidationPartition.take(origin, 1);
+        origin = CrossValidationPartition.exclude(origin, testPartition);
+        CrossValidationPartition[] validationPartition = CrossValidationPartition.take(origin, 1);
+        origin = CrossValidationPartition.exclude(origin, validationPartition);
 
-        XLog validationLog = CrossValidationPartition.bind(validationPartitions).getLog();
+        XLog testLog = CrossValidationPartition.bind(testPartition).getLog();
+        XLog validationLog = CrossValidationPartition.bind(validationPartition).getLog();
         XLog trainingLog = CrossValidationPartition.bind(origin).getLog();
-        XLog testLog = new XLogImpl(log.getAttributes());
 
         return new BenchmarkLogs()
         {{
@@ -151,11 +137,13 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
         }};
     }
 
-    private void processAdaptiveNoise(AdaMiner adaMiner, BenchmarkLogs benchmarkLogs, Weights weights) throws MiningException {
+    private void processAdaptiveNoise(AdaMinerValidation adaMiner, BenchmarkLogs benchmarkLogs, Weights weights) throws MiningException {
         //mine the models
+        adaMiner.setLog(benchmarkLogs.getTrainLog());
+        adaMiner.setValidationLog(benchmarkLogs.getValidationLog());
         adaMiner.mine();
         adaMiner.setConformanceInfo(getPsi(adaMiner.getHelper(), adaMiner.getProcessTree(),
-                benchmarkLogs.getTrainLog(), benchmarkLogs.getValidationLog(), weights));
+                benchmarkLogs.getTrainLog(), benchmarkLogs.getTestLog(), weights));
     }
 
 
@@ -179,32 +167,32 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
 
             for (Weights weights: adaptiveNoiseBenchmarkConfiguration.getWeights()) {
 
-                AdaMiner adaMinerImi =
-                        new AdaMiner(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, false));
+                AdaMinerValidation adaMinerImi =
+                        new AdaMinerValidation(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, false));
                 processAdaptiveNoise(adaMinerImi, benchmarkLogs, weights);
 
                 List<NoiseInductiveMiner> targets = getTargets(filename);
                 List<NoiseInductiveMiner> miners = null;
 
-                AdaMiner adaMinerImiTag = null;
+                AdaMinerValidation adaMinerImiTag = null;
                 NoiseInductiveMiner preBestBaseline = null;
                 if (includePreFiter) {
                     adaMinerImiTag =
-                            new AdaMiner(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, true));
+                            new AdaMinerValidation(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, true));
                     processAdaptiveNoise(adaMinerImiTag, benchmarkLogs, weights);
 
                     miners = targets.stream().filter(NoiseInductiveMiner::isFilterPreExecution).collect(Collectors.toList());
 
                     preBestBaseline = obtainBest(miners, benchmarkLogs.getTrainLog(), benchmarkLogs.getValidationLog(), weights);
                     preBestBaseline.setConformanceInfo(getPsi(preBestBaseline.getHelper(),
-                            preBestBaseline.getProcessTree(), benchmarkLogs.getTrainLog(), benchmarkLogs.getValidationLog(), weights));
+                            preBestBaseline.getProcessTree(), benchmarkLogs.getTrainLog(), benchmarkLogs.getTestLog(), weights));
                 }
 
 
                 miners = targets.stream().filter(x-> !x.isFilterPreExecution()).collect(Collectors.toList());
                 NoiseInductiveMiner nonPreFilterBestBaseline = obtainBest(miners, benchmarkLogs.getTrainLog(), benchmarkLogs.getValidationLog(), weights);
                 nonPreFilterBestBaseline.setConformanceInfo(getPsi(nonPreFilterBestBaseline.getHelper(),
-                        nonPreFilterBestBaseline.getProcessTree(), benchmarkLogs.getTrainLog(), benchmarkLogs.getValidationLog(), weights));
+                        nonPreFilterBestBaseline.getProcessTree(), benchmarkLogs.getTrainLog(), benchmarkLogs.getTestLog(), weights));
 
                 logger.log(Level.INFO, String.format("BEST AN MODEL (d=IMi) : %s, %s",
                         adaMinerImi.getConformanceInfo().toString(), adaMinerImi.getProcessTree().toString()));
@@ -221,19 +209,7 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
                             preBestBaseline.getNoiseThreshold()));
                 }
 
-
-                /*
-                logger.log(Level.INFO, String.format("BEST BASELINE (IMi pre filter) (noise %f ): %s, %s",
-                        preBestBaseline.getNoiseThreshold(),
-                        preBestBaseline.getConformanceInfo().toString(),
-                        preBestBaseline.getResult().getProcessTree().toString()));
-                */
-
-
-                /*
-                logger.log(Level.INFO, String.format("BEST AN MODEL (d=IMi pre filter)         : %s", adaMinerImiTag.getConformanceInfo().toString()));
-                */
-                //sendResult(adaptiveNoiseMiner, adaptiveNoiseMinerPreFilter, nonPreFilterBestBaseline, preBestBaseline, filename);
+                sendResult(adaMinerImi, nonPreFilterBestBaseline, filename, miners);
             }
         }
     }
@@ -253,7 +229,10 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
         return bestBaseline;
     }
 
-    private void sendResult(IBenchmarkableMiner source, AdaptiveNoiseMiner adaptiveNoiseMinerPreFilter, NoiseInductiveMiner inductiveMiner,  NoiseInductiveMiner PreFilterBestBaseline, String filename) throws ExportFailedException {
+    private void sendResult(AdaMinerValidation source,
+                            NoiseInductiveMiner inductiveMiner,
+                            String filename,
+                            List<NoiseInductiveMiner> miners) throws ExportFailedException {
         try{
             boolean appendSchema = true;
             if (new File(path).isFile()){
@@ -266,21 +245,16 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
                 fileReader.close();
                 reader.close();
             }
-            AdaptiveNoiseMiner adaptiveNoiseMiner = (AdaptiveNoiseMiner) source;
-            TreeChanges bestModel = adaptiveNoiseMiner.getBestModel();
-            TreeChanges preBestModel = adaptiveNoiseMinerPreFilter.getBestModel();
-            int optionsScanned = adaptiveNoiseMiner.getChanges().size();
 
 
             CSVWriter csvWriter = new CSVWriter(new FileWriter(path, true));
             String[] schema = new String[]
                     {
                             "run_id",
+                            "current_time",
                             "group",
                             "filename",
-                            "number_of_partitions",
                             "duration",
-                            "options_scanned",
                             "noise_thresholds",
                             "fitness_weight",
                             "precision_weight",
@@ -289,60 +263,38 @@ public class AdaBenchmark implements IBenchmark<AdaptiveNoiseMiner, NoiseInducti
                             "best_fitness",
                             "best_precision",
                             "best_generalization",
-                            "best_num_sublogs_changed",
-                            "pre_best_psi",
-                            "pre_best_fitness",
-                            "pre_best_precision",
-                            "pre_best_generalization",
-                            "pre_best_num_sublogs_changed",
+                            "baseline_duration",
                             "baseline_noise",
                             "baseline_psi",
                             "baseline_fitness",
                             "baseline_precision",
-                            "baseline_generalization",
-                            "pre_baseline_noise",
-                            "pre_baseline_psi",
-                            "pre_baseline_fitness",
-                            "pre_baseline_precision",
-                            "pre_baseline_generalization",
-                            "improvement",
-                            "pre_improvement"
+                            "baseline_generalization"
                     };
+
             String[] data = new String[] {
                     this.runId.toString(),
+                    Instant.now().toString(),
                     filename.contains("2017") ? "BPM-2017" : filename.contains("2016") ? "BPM-2016" : "DFCI",
                     filename.replace("EventLogs\\contest_2017\\log", "BPM-2017-Log")
                             .replace("EventLogs\\contest_dataset\\training_log_","BPM-2016-Log")
                             .replace(".xes", ""),
-                    String.valueOf(bestModel.getPratitioning().getPartitions().size()),
-                    String.valueOf(source.getElapsedMiliseconds()),
-                    String.valueOf(optionsScanned),
+                    String.valueOf(source.getElapsedMiliseconds() / 1000.0),
                     org.apache.commons.lang3.StringUtils.join(this.adaptiveNoiseBenchmarkConfiguration.getNoiseThresholds(), ',') ,
-                    String.valueOf(adaptiveNoiseMiner.getConformanceInfo().getFitnessWeight()),
-                    String.valueOf(adaptiveNoiseMiner.getConformanceInfo().getPrecisionWeight()),
-                    String.valueOf(adaptiveNoiseMiner.getConformanceInfo().getGeneralizationWeight()),
-                    String.valueOf(bestModel.getConformanceInfo().getPsi()),
-                    String.valueOf(bestModel.getConformanceInfo().getFitness()),
-                    String.valueOf(bestModel.getConformanceInfo().getPrecision()),
-                    String.valueOf(bestModel.getConformanceInfo().getGeneralization()),
-                    String.valueOf(bestModel.getNumberOfChanges()),
-                    String.valueOf(preBestModel.getConformanceInfo().getPsi()),
-                    String.valueOf(preBestModel.getConformanceInfo().getFitness()),
-                    String.valueOf(preBestModel.getConformanceInfo().getPrecision()),
-                    String.valueOf(preBestModel.getConformanceInfo().getGeneralization()),
-                    String.valueOf(preBestModel.getNumberOfChanges()),
+                    String.valueOf(source.getConformanceInfo().getFitnessWeight()),
+                    String.valueOf(source.getConformanceInfo().getPrecisionWeight()),
+                    String.valueOf(source.getConformanceInfo().getGeneralizationWeight()),
+                    String.valueOf(source.getConformanceInfo().getPsi()),
+                    String.valueOf(source.getConformanceInfo().getFitness()),
+                    String.valueOf(source.getConformanceInfo().getPrecision()),
+                    String.valueOf(source.getConformanceInfo().getGeneralization()),
+                    String.valueOf(miners.stream().mapToDouble(x-> x.getElapsedMiliseconds() / 1000.0).sum()),
                     String.valueOf(inductiveMiner.getNoiseThreshold()),
                     String.valueOf(inductiveMiner.getConformanceInfo().getPsi()),
                     String.valueOf(inductiveMiner.getConformanceInfo().getFitness()),
                     String.valueOf(inductiveMiner.getConformanceInfo().getPrecision()),
-                    String.valueOf(inductiveMiner.getConformanceInfo().getGeneralization()),
-                    String.valueOf(PreFilterBestBaseline.getNoiseThreshold()),
-                    String.valueOf(PreFilterBestBaseline.getConformanceInfo().getPsi()),
-                    String.valueOf(PreFilterBestBaseline.getConformanceInfo().getFitness()),
-                    String.valueOf(PreFilterBestBaseline.getConformanceInfo().getPrecision()),
-                    String.valueOf(PreFilterBestBaseline.getConformanceInfo().getGeneralization()),
-                    String.valueOf(bestModel.getConformanceInfo().getPsi() / inductiveMiner.getConformanceInfo().getPsi() - 1),
-                    String.valueOf(bestModel.getConformanceInfo().getPsi() / PreFilterBestBaseline.getConformanceInfo().getPsi() - 1)};
+                    String.valueOf(inductiveMiner.getConformanceInfo().getGeneralization())
+            };
+
 
             if (appendSchema){
                 csvWriter.writeNext(schema);

@@ -1,33 +1,14 @@
-package org.eduprom.miners.adaptiveNoise;
+package org.eduprom.partitioning.trunk;
 
+import javafx.util.Pair;
 import org.deckfour.xes.classification.XEventNameClassifier;
 import org.deckfour.xes.model.XLog;
-import org.eduprom.benchmarks.IBenchmarkableMiner;
 import org.eduprom.benchmarks.configuration.NoiseThreshold;
-import org.eduprom.benchmarks.configuration.Weights;
-import org.eduprom.entities.CrossValidationPartition;
 import org.eduprom.exceptions.LogFileNotFoundException;
 import org.eduprom.exceptions.MiningException;
 import org.eduprom.miners.AbstractMiner;
 import org.eduprom.miners.AbstractPetrinetMiner;
-import org.eduprom.miners.InductiveMiner;
-import org.eduprom.miners.adaptiveNoise.IntermediateMiners.MiningResult;
-import org.eduprom.miners.adaptiveNoise.IntermediateMiners.NoiseInductiveMiner;
-import org.eduprom.miners.adaptiveNoise.benchmarks.AdaBenchmark;
-import org.eduprom.miners.adaptiveNoise.configuration.AdaptiveNoiseConfiguration;
-import org.eduprom.miners.adaptiveNoise.conformance.ConformanceInfo;
-import org.eduprom.miners.adaptiveNoise.conformance.IAdaptiveNoiseConformanceObject;
-import org.eduprom.miners.adaptiveNoise.conformance.IConformanceContext;
-import org.eduprom.miners.adaptiveNoise.filters.FilterAlgorithm;
-import org.eduprom.miners.adaptiveNoise.filters.FilterResult;
-import org.eduprom.partitioning.ILogSplitter;
-import org.eduprom.partitioning.MiningParametersLogSplitting;
-import org.eduprom.partitioning.Partitioning;
-import org.eduprom.utils.PetrinetHelper;
 import org.processmining.framework.packages.PackageManager;
-import org.processmining.log.parameters.LowFrequencyFilterParameters;
-import org.processmining.plugins.InductiveMiner.conversion.ReduceTree;
-import org.processmining.plugins.InductiveMiner.efficienttree.EfficientTreeReduce;
 import org.processmining.plugins.InductiveMiner.efficienttree.UnknownTreeNodeException;
 import org.processmining.plugins.InductiveMiner.mining.IMLogInfo;
 import org.processmining.plugins.InductiveMiner.mining.MinerState;
@@ -44,8 +25,6 @@ import org.processmining.plugins.InductiveMiner.mining.logs.IMLog;
 import org.processmining.plugins.InductiveMiner.mining.logs.IMLogImpl;
 import org.processmining.plugins.InductiveMiner.mining.logs.LifeCycles;
 import org.processmining.plugins.InductiveMiner.mining.postprocessor.PostProcessor;
-import org.processmining.plugins.petrinet.replayresult.PNRepResult;
-import org.processmining.plugins.pnalignanalysis.conformance.AlignmentPrecGenRes;
 import org.processmining.processtree.Block;
 import org.processmining.processtree.Node;
 import org.processmining.processtree.ProcessTree;
@@ -55,33 +34,21 @@ import org.processmining.processtree.impl.ProcessTreeImpl;
 import org.processmining.ptconversions.pn.ProcessTree2Petrinet;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
-
-import static java.lang.String.format;
-import static org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner.FITNESS_KEY;
 
 
-public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMiner {
+public class AdaptiveNoiseExhaustive2 extends AbstractPetrinetMiner {
 
     protected final static Logger logger = Logger.getLogger(AbstractMiner.class.getName());
+    private final MinerState minerState;
 
+    private NoiseThreshold noiseThreshold;
     private Map<Float, MinerState> parametersIMfMap;
     private MiningParametersIMf parameters;
-    private AdaptiveNoiseConfiguration adaptiveNoiseConfiguration;
-    private ProcessTree bestTree;
-    private ConformanceInfo conformanceInfo;
-
-    @Override
-    protected ProcessTree2Petrinet.PetrinetWithMarkings minePetrinet() throws MiningException {
-        return this.petrinetHelper.ConvertToPetrinet(discover(this.log));
-    }
-
 
     protected static PackageManager.Canceller _canceller = new PackageManager.Canceller() {
 
@@ -93,29 +60,23 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
         }
     };
 
-    public AdaMiner(String filename, AdaptiveNoiseConfiguration adaptiveNoiseConfiguration) throws LogFileNotFoundException {
+    public AdaptiveNoiseExhaustive2(String filename, NoiseThreshold noiseThreshold) throws LogFileNotFoundException {
         super(filename);
-        //this.noiseThreshold = noiseThreshold;
+        this.noiseThreshold = noiseThreshold;
         this.parametersIMfMap = new HashMap<>();
-        this.adaptiveNoiseConfiguration = adaptiveNoiseConfiguration;
-        float[] thresholds = adaptiveNoiseConfiguration.getNoiseThresholds();
+        float[] thresholds = noiseThreshold.getThresholds();
         this.parameters = new MiningParametersIMf();
+        this.minerState = new MinerState(this.parameters, this.canceller);
         for (float threshold: thresholds) {
-            this.parametersIMfMap.put(threshold, new MinerState(new MiningParametersIMf() {{
-                setNoiseThreshold(threshold);
-            }}, _canceller));
+            MinerState minerState = new MinerState(new MiningParametersIMf() {{ setNoiseThreshold(threshold);}}, _canceller);
+            this.parametersIMfMap.put(threshold, minerState);
         }
     }
 
-
-    public ProcessTree discover(XLog xlog) throws MiningException {
-        logger.info(String.format("Miners with %d noise thresholds %s are optional",
-                adaptiveNoiseConfiguration.getNoiseThresholds().length, this.parametersIMfMap.keySet().stream()
-                        .map(x-> String.valueOf(x.floatValue())).collect(Collectors.joining (","))));
-        Weights weights = adaptiveNoiseConfiguration.getWeights();
-        logger.info(format("Fitness weight: %f, Precision weight: %f, generalization weight: %f",
-                weights.getFitnessWeight(), weights.getPrecisionWeight(), weights.getGeneralizationWeight()));
-
+    public ProcessTree discover(XLog xlog) {
+        //XLog filteredLog = filterLog(xlog).getFilteredLog();
+        //Partitioning partitioning = new Partitioning(conformanceContext, filteredLog);
+        //this.parameters.setLogPartitining(partitioning);
         IMLog log = new IMLogImpl(xlog, new XEventNameClassifier());
         //repair life cycle if necessary
         if (this.parameters.isRepairLifeCycle()) {
@@ -124,57 +85,24 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
 
         //create process tree
 
-        ProcessTree tree = new ProcessTreeImpl();
+
+
         MinerState minerState = new MinerState(this.parameters, _canceller);
-        Node root = mineNode(log, tree, minerState);
+        List<ProcessTree> trees = discover(log, new ProcessTreeImpl());
 
         if (_canceller.isCancelled()) {
             minerState.shutdownThreadPools();
             return null;
         }
 
-        root.setProcessTree(tree);
-        tree.setRoot(root);
-        discoveredTrees.putIfAbsent(tree.toString(), tree);
-
-
-        logger.info(String.format("Found total %d trees", discoveredTrees.size()));
-
-
-        Map<ProcessTree, ConformanceInfo> treeConformanceInfoEntry = discoveredTrees.values().stream().collect(Collectors.toMap(x->x, x -> {
-            try {
-                return AdaBenchmark.getPsi(petrinetHelper, x, xlog, xlog, weights);
-            } catch (MiningException e) {
-                throw new RuntimeException();
-            }
-        }));
-
-        for(String treeRepresentation : discoveredTrees.keySet()){
-            logger.info(String.format("discovered tree: %s", treeRepresentation));
-        }
-        Map.Entry<ProcessTree, ConformanceInfo> bestModel = treeConformanceInfoEntry.entrySet().stream()
-                .max(Comparator.comparing(x->x.getValue().getPsi())).get();
-        this.bestTree = bestModel.getKey();
-        this.conformanceInfo = bestModel.getValue();
-        logger.info(String.format("Best AdA model: conformance %s, tree: %s", bestModel.getValue(), bestModel.getKey().toString()));
-
 
         if (_canceller.isCancelled()) {
             minerState.shutdownThreadPools();
             return null;
         }
-
-        debug("discovered tree " + bestModel.getKey().getRoot(), minerState);
 
         //reduce the tree
-        if (this.parameters.getReduceParameters() != null) {
-            try {
-                this.bestTree = ReduceTree.reduceTree(this.bestTree, this.parameters.getReduceParameters());
-                debug("after reduction " + tree.getRoot(), minerState);
-            } catch (UnknownTreeNodeException | EfficientTreeReduce.ReductionFailedException e) {
-                e.printStackTrace();
-            }
-        }
+        //TODO: handle reduce parameters
 
         minerState.shutdownThreadPools();
 
@@ -182,54 +110,65 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
             return null;
         }
 
-        return this.bestTree;
+        return trees.stream().findAny().get();
     }
 
-    private Map<String, ProcessTree> discoveredTrees = new HashMap<>();
+    @Override
+    protected ProcessTree2Petrinet.PetrinetWithMarkings minePetrinet() throws MiningException {
+        return this.petrinetHelper.ConvertToPetrinet(discover(this.log));
+    }
 
-    private Map.Entry<Float, MinerState> obtainMinerState(IMLog log) throws MiningException {
-        ConformanceInfo bestCutConformanceInfo = null;
-        Map.Entry<Float, MinerState> bestCut = null;
-        for(Map.Entry<Float, MinerState> mfEntry: parametersIMfMap.entrySet()) {
-            NoiseInductiveMiner miner = new NoiseInductiveMiner(filename, mfEntry.getKey(), adaptiveNoiseConfiguration.isPreExecuteFilter());
-            XLog cLog = log.toXLog();
-            /*
-            int partitionSize = (int)Math.round(log.size() / 10.0);
-            if (partitionSize == 0){
-                partitionSize = 1;
+
+    public List<ProcessTree> discover(IMLog log, ProcessTree baseProcessTree){
+
+        //construct basic information about log
+        IMLogInfo logInfo = minerState.parameters.getLog2LogInfo().createLogInfo(log);
+        Map<MinerState, Pair<LogSplitter.LogSplitResult, Cut>> cuts = mineCuts(log, logInfo);
+
+        List<Node> nodes = new ArrayList<>();
+        for(Map.Entry<MinerState, Pair<LogSplitter.LogSplitResult, Cut>> entry : cuts.entrySet()){
+            Cut cut = entry.getValue().getValue();
+            LogSplitter.LogSplitResult splitResult = entry.getValue().getKey();
+
+            if (splitResult != null){
+                ProcessTree tree = baseProcessTree.toTree();
+                for(IMLog sublog: splitResult.sublogs){
+                    Node node = mineNode(sublog, tree, entry.getKey());
+                    nodes.add(node);
+                    discover(sublog.toXLog());
+                }
             }
-            List<CrossValidationPartition> origin =  this.logHelper.crossValidationSplit(cLog, partitionSize);
-            CrossValidationPartition[] validationPartitions = CrossValidationPartition.take(origin, 1);
-            origin = CrossValidationPartition.exclude(origin, validationPartitions);
-
-            XLog validationLog = CrossValidationPartition.bind(validationPartitions).getLog();
-            XLog trainingLog = partitionSize > 1 ? CrossValidationPartition.bind(origin).getLog() : validationLog;
-            */
-
-            List<CrossValidationPartition> origin =  this.logHelper.crossValidationSplit(cLog, 10);
-            CrossValidationPartition[] validationPartitions = CrossValidationPartition.take(origin, 1);
-            origin = CrossValidationPartition.exclude(origin, validationPartitions);
-
-            XLog validationLog = CrossValidationPartition.bind(validationPartitions).getLog();
-            XLog trainingLog = CrossValidationPartition.bind(origin).getLog();
-
-            ProcessTree subLogTree = miner.mineProcessTree(trainingLog).getProcessTree();
-            //logger.info(String.format("evaluating conformance for noise threshold: %f", mfEntry.getKey()));
-            ConformanceInfo conformanceInfo = AdaBenchmark.getPsi(petrinetHelper, subLogTree, trainingLog, validationLog, adaptiveNoiseConfiguration.getWeights());
-            //logger.info(String.format("finished evaluating conformance for noise threshold: %f", mfEntry.getKey()));
-            logger.info(String.format("%f threshold, conformance info: %s, tree: %s",  mfEntry.getKey(), conformanceInfo, subLogTree.toString()));
-            //discoveredTrees.putIfAbsent(subLogTree.toString(), subLogTree);
-
-            if (bestCut == null || conformanceInfo.getPsi() > bestCutConformanceInfo.getPsi()){
-                bestCutConformanceInfo = conformanceInfo;
-                bestCut = mfEntry;
+            else {
+                ProcessTree tree = baseProcessTree.toTree();
+                Node node = mineNode(log, tree, entry.getKey());
             }
         }
 
-        return bestCut;
+        return null;
     }
 
-    public Node mineNode(IMLog log, ProcessTree tree, MinerState minerState) throws MiningException {
+
+    public Map<MinerState, Pair<LogSplitter.LogSplitResult, Cut>> mineCuts(IMLog log, IMLogInfo logInfo) {
+
+
+        //endregion
+        Map<MinerState, Pair<LogSplitter.LogSplitResult, Cut>> cuts = new HashMap<>();
+        for(Map.Entry<Float, MinerState> mfEntry: parametersIMfMap.entrySet()) {
+            Cut cut = findCut(log, logInfo, mfEntry.getValue());
+            LogSplitter.LogSplitResult splitResult = null;
+            if (cut != null && cut.isValid()) {
+                splitResult = splitLog(log, logInfo, cut, mfEntry.getValue());
+            }
+
+
+            //List<Node> cutNode = handleCut(log, logInfo, cut, mfEntry.getValue(), minerState, tree);
+            cuts.put(minerState, new Pair<>(splitResult, cut));
+        }
+
+        return cuts;
+    }
+
+    public static Node mineNode(IMLog log, ProcessTree tree, MinerState minerState) {
         //construct basic information about log
         IMLogInfo logInfo = minerState.parameters.getLog2LogInfo().createLogInfo(log);
 
@@ -252,15 +191,9 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
             return null;
         }
 
-        Map.Entry<Float, MinerState> bestCut = obtainMinerState(log);
-        logger.info("started evaluating miners");
+        //find cut
+        Cut cut = findCut(log, logInfo, minerState);
 
-        logger.info(String.format("Best cut of %f noise threshold", bestCut.getKey()));
-        Cut cut = findCut(log, logInfo, bestCut.getValue());
-        return handleCut(bestCut.getValue(), cut, logInfo, log, tree);
-    }
-
-    private Node handleCut(MinerState minerState, Cut cut, IMLogInfo logInfo, IMLog log, ProcessTree tree) throws MiningException {
         if (minerState.isCancelled()) {
             return null;
         }
@@ -349,17 +282,22 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
             return result;
 
         } else {
-            Map.Entry<Float, MinerState> fallThroughMinerState = obtainMinerState(log);
-            logger.info(String.format("FallThrough noise: %f", fallThroughMinerState.getKey()));
             //cut is not valid; fall through
-            Node result = findFallThrough(log, logInfo, tree, fallThroughMinerState.getValue());
+            Node result = findFallThrough(log, logInfo, tree, minerState);
 
-            result = postProcess(result, log, logInfo, fallThroughMinerState.getValue());
+            result = postProcess(result, log, logInfo, minerState);
 
-            debug(" discovered node " + result, fallThroughMinerState.getValue());
+            debug(" discovered node " + result, minerState);
             return result;
         }
     }
+
+    public static void debug(Object x, MinerState minerState) {
+        if (minerState.parameters.isDebug()) {
+            System.out.println(x.toString());
+        }
+    }
+    //region inductive methods
 
     private static Node postProcess(Node newNode, IMLog log, IMLogInfo logInfo, MinerState minerState) {
         for (PostProcessor processor : minerState.parameters.getPostProcessors()) {
@@ -431,7 +369,6 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
     }
 
     public static Node findFallThrough(IMLog log, IMLogInfo logInfo, ProcessTree tree, MinerState minerState) {
-
         Node n = null;
         Iterator<FallThrough> it = minerState.parameters.getFallThroughs().iterator();
         while (n == null && it.hasNext()) {
@@ -442,7 +379,6 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
 
             n = it.next().fallThrough(log, logInfo, tree, minerState);
         }
-        logger.info(String.format("Fall Through: %s", n));
         return n;
     }
 
@@ -459,40 +395,11 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
         return result;
     }
 
-    public static void debug(Object x, MinerState minerState) {
-        if (minerState.parameters.isDebug()) {
-            System.out.println(x.toString());
-        }
-    }
-
     public static void addChild(Block parent, Node child, MinerStateBase minerState) {
         if (!minerState.isCancelled() && parent != null && child != null) {
             parent.addChild(child);
         }
     }
 
-    @Override
-    public ConformanceInfo getConformanceInfo() {
-        return this.conformanceInfo;
-    }
-
-    @Override
-    public void setConformanceInfo(ConformanceInfo conformanceInfo) {
-        this.conformanceInfo = conformanceInfo;
-    }
-
-    @Override
-    public ProcessTree2Petrinet.PetrinetWithMarkings getModel() {
-        return this.getDiscoveredPetriNet();
-    }
-
-    @Override
-    public PetrinetHelper getHelper() {
-        return this.petrinetHelper;
-    }
-
-    @Override
-    public ProcessTree getProcessTree() {
-        return this.bestTree;
-    }
+    //endregion
 }

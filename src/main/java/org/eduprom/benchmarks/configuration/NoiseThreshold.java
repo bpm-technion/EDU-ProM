@@ -2,6 +2,7 @@ package org.eduprom.benchmarks.configuration;
 
 import org.eduprom.exceptions.MiningException;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,10 @@ public class NoiseThreshold {
         this.thresholds = thresholds;
 
     }
+    static float roundTwoDecimals(float f) {
+        DecimalFormat twoDForm = new DecimalFormat("#.###");
+        return Float.valueOf(twoDForm.format(f));
+    }
 
     public float[] getThresholds() {
         return thresholds;
@@ -21,9 +26,14 @@ public class NoiseThreshold {
 
     public static NoiseThreshold uniform(float interval, float min, float max) {
         List<Float> values = new ArrayList<>();
-        for (float value = min; value <= max; value+=interval){
+        float value = roundTwoDecimals(min);
+        while(value <= max){
             values.add(value);
+            value += interval;
+            value = roundTwoDecimals(value);
+
         }
+
         //values.add(1.0f);
         Float[] thresholds = values.toArray(new Float[0]);
         final float[] result = new float[thresholds.length];

@@ -30,17 +30,12 @@ public class DanaFarber {
         try {
 
 			AdaptiveNoiseBenchmarkConfiguration configuration = AdaptiveNoiseBenchmarkConfiguration.getBuilder()
-					.useCrossValidation(false)
-					.setNoiseThresholds(NoiseThreshold.uniform(0.05f))
-					//.addWeights(Weights.getUniform())
 					.addLogs(Logs.getBuilder().addFile(trainFile).build())
-					.addWeights(Weights.getRangePrecision(0.1))
-					//.addWeights(new Weights(0.0, 0.0, 1.0))
-					.setLogSplitter(InductiveCutSplitting.class) //InductiveCutSplitting
+					.addWeights(Weights.getUniform())
+					.setNoiseThresholds(NoiseThreshold.uniform(0.2f))
+					.setLogSplitter(InductiveCutSplitting.class)
 					.build();
 			IBenchmark benchmark = new AdaptiveNoiseBenchmarkDfci(testFile, configuration, 10);
-			//IBenchmark benchmark = new AdaptiveNoiseBenchmark(new ArrayList<String>() {{ add(trainFile); add(testFile); }},
-			//		configuration, 10);
 			benchmark.run();
 
         } catch (Exception ex) {

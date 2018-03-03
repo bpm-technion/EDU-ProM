@@ -64,14 +64,14 @@ public abstract class AbstractMiner implements IMiner {
     public void mine() {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
-            logger.info(String.format("Started training the log file: %s using the algorithm: %s",
+            logger.log(Level.FINE, String.format("Started training the log file: %s using the algorithm: %s",
                     filename, getName()));
             readLog();
             //logHelper.printLogGrouped(Level.FINE, log);
-            logger.info(String.format("reading event log finished successfully,log size: %s", log.size()));
+            logger.log(Level.FINE, String.format("reading event log finished successfully,log size: %s", log.size()));
 
             mineSpecific();
-            logger.info(String.format("Training the log file: %s using the algorithm: %s has completed successfully"
+            logger.log(Level.FINE, String.format("Training the log file: %s using the algorithm: %s has completed successfully"
                     , filename, getName()));
             stopwatch.stop();
             this.elapsedMiliseconds = stopwatch.elapsed(TimeUnit.MILLISECONDS);
