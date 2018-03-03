@@ -79,5 +79,14 @@ public class Weights {
         return weightsList;
     }
 
+    public static List<Weights> getRangeGeneralization(double interval){
+        List<Weights> weightsList = new ArrayList<>();
+        double generalization = TOTAL_WEIGHT;
+        while(generalization >= 0){
+            weightsList.add(new Weights((TOTAL_WEIGHT - generalization) / 2.0, (TOTAL_WEIGHT - generalization) / 2.0, generalization));
+            generalization -= interval;
+        }
 
+        return weightsList;
+    }
 }

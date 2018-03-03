@@ -15,7 +15,8 @@ public class FlowerMiner extends AbstractPetrinetMiner {
 	
     @Override
     protected PetrinetWithMarkings minePetrinet() throws MiningException {
-        Object[] res = new org.processmining.plugins.flowerMiner.FlowerMiner().mineDefaultPetrinet(getPromPluginContext(), log);
+        Object[] res = new org.processmining.plugins.flowerMiner.FlowerMiner()
+                .mineDefaultPetrinet(getPromPluginContext(), log);
         PetrinetWithMarkings pn = new PetrinetWithMarkings();
         pn.petrinet = (PetrinetImpl)res[0];
         pn.initialMarking = (Marking)res[1];

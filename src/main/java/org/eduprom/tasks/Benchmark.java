@@ -3,21 +3,15 @@ package org.eduprom.tasks;
 import org.eduprom.benchmarks.configuration.Logs;
 import org.eduprom.benchmarks.configuration.NoiseThreshold;
 import org.eduprom.benchmarks.configuration.Weights;
-import org.eduprom.miners.adaptiveNoise.benchmarks.AdaBenchmark;
-import org.eduprom.miners.adaptiveNoise.benchmarks.AdaptiveNoiseBenchmark;
+import org.eduprom.miners.adaptiveNoise.benchmarks.AdaBenchmarkValidation;
 import org.eduprom.benchmarks.IBenchmark;
 import org.eduprom.miners.adaptiveNoise.benchmarks.AdaptiveNoiseBenchmarkConfiguration;
-import org.eduprom.partitioning.InductiveCutSplitting;
-import org.eduprom.partitioning.trunk.InductiveLogSplitting;
 
 import java.io.FileInputStream;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 
 public class Benchmark {
@@ -31,22 +25,25 @@ public class Benchmark {
 
     	logManager.readConfiguration(new FileInputStream("./app.properties"));
     	logger.info("started application");
+		//Arrays.stream()logger.getHandlers()
 
-    	//2017 good:
+    	//2017 good: 3, (4?), (5?), 9
 
         try {
 			AdaptiveNoiseBenchmarkConfiguration configuration = AdaptiveNoiseBenchmarkConfiguration.getBuilder()
-					.addLogs(Logs.getBuilder().addNumbers(1, 10).addFormat(Logs.CONTEST_2017).build())
+					.addLogs(Logs.getBuilder().addNumbers(8).addFormat(Logs.CONTEST_2016).build())
+					//.addLogs(Logs.getBuilder().addNumbers(5).addFormat(dfciMay).build())
 					//.setLogSplitter(InductiveLogSplitting.class)
 					//.addLogs(Logs.getBuilder().addNumbers(1, 10).addFormat(dfciApril).build())
-					//.setNoiseThresholds(NoiseThreshold.uniform(0.2f))
-					//.addWeights(new Weights(0.2, 0.4, 0.4))
-					//.addWeights(Weights.getRange(0.1))
+					.setNoiseThresholds(NoiseThreshold.uniform(0.2f))
+					.addWeights(Weights.getRangeGeneralization(0.2))
+					//.addWeights(new Weights(0.0, 1.0, 0.0))
+					//.addWeights(Weights.getRange(0.2))
 					//.setPartitionNoiseFilter(0.2f)
-					//.addWeights(new Weights(0.2, 0.4, 0.4))
 					.build();
-			IBenchmark benchmark = new AdaBenchmark(configuration, 10);
-			benchmark.run();
+			//IBenchmark benchmark = new AdaptiveNoiseBenchmark(configuration, 10);
+			new AdaBenchmarkValidation(configuration, 10).run();
+
 
         } catch (Exception ex) {
         	logger.log(Level.SEVERE, "exception when trying to train/evaluate the miner", ex);

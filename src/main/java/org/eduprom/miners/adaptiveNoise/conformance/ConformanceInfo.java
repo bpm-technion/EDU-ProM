@@ -94,6 +94,14 @@ public class ConformanceInfo {
         return new ConformanceInfo(this.getFitnessWeight(), this.getPrecisionWeight(), this.getGeneralizationWeight());
     }
 
+    public ConformanceInfo toConformanceInfo(){
+        ConformanceInfo info = CloneWeights();
+        info.setFitness(this.fitness);
+        info.setPrecision(this.precision);
+        info.setGeneralization(this.generalization);
+        return info;
+    }
+
     public long getFitnessDuration() {
         return fitnessDuration;
     }

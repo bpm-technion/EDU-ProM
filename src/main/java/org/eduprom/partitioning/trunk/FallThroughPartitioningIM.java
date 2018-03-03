@@ -80,7 +80,7 @@
 //
 //                    if (x || (!strict && y)) {
 //
-//                        AdaMiner.debug(" fall through: leave out one-per-trace activity", minerState);
+//                        AdaMinerValidation.debug(" fall through: leave out one-per-trace activity", minerState);
 //
 //                        //create cut
 //                        Set<XEventClass> sigma0 = new THashSet<>();
@@ -103,14 +103,14 @@
 //
 //                        //construct node
 //                        Block newNode = new AbstractBlock.And("");
-//                        AdaMiner.addNode(tree, newNode);
+//                        AdaMinerValidation.addNode(tree, newNode);
 //
 //                        //recurse
-//                        Node child1 = AdaMiner.mineNode(log1, tree, minerState);
-//                        AdaMiner.addChild(newNode, child1, minerState);
+//                        Node child1 = AdaMinerValidation.mineNode(log1, tree, minerState);
+//                        AdaMinerValidation.addChild(newNode, child1, minerState);
 //
-//                        Node child2 = AdaMiner.mineNode(log2, tree, minerState);
-//                        AdaMiner.addChild(newNode, child2, minerState);
+//                        Node child2 = AdaMinerValidation.mineNode(log2, tree, minerState);
+//                        AdaMinerValidation.addChild(newNode, child2, minerState);
 //
 //                        return newNode;
 //                    }
@@ -180,7 +180,7 @@
 //                            partition.add(Sets.complement(leaveOutSet, logInfo.getActivities().toSet()));
 //                            Cut cut = new Cut(Cut.Operator.concurrent, partition);
 //
-//                            AdaMiner.debug("  try cut " + cut, minerState);
+//                            AdaMinerValidation.debug("  try cut " + cut, minerState);
 //
 //                            //see if a cut applies
 //                            //for performance reasons, only on the directly-follows graph
@@ -213,7 +213,7 @@
 //            if (found.get() && !minerState.isCancelled()) {
 //                //the cut we made is a valid one; split the log, construct the parallel construction and recurse
 //
-//                AdaMiner.debug(" fall through: leave out activity", minerState);
+//                AdaMinerValidation.debug(" fall through: leave out activity", minerState);
 //
 //                LogSplitter.LogSplitResult logSplitResult = minerState.parameters.getLogSplitter().split(log, logInfo, cutWrapper.cut,
 //                        minerState);
@@ -224,13 +224,13 @@
 //                IMLog log2 = logSplitResult.sublogs.get(1);
 //
 //                Block newNode = new AbstractBlock.And("");
-//                AdaMiner.addNode(tree, newNode);
+//                AdaMinerValidation.addNode(tree, newNode);
 //
-//                Node child1 = AdaMiner.mineNode(log1, tree, minerState);
-//                AdaMiner.addChild(newNode, child1, minerState);
+//                Node child1 = AdaMinerValidation.mineNode(log1, tree, minerState);
+//                AdaMinerValidation.addChild(newNode, child1, minerState);
 //
-//                Node child2 = AdaMiner.mineNode(log2, tree, minerState);
-//                AdaMiner.addChild(newNode, child2, minerState);
+//                Node child2 = AdaMinerValidation.mineNode(log2, tree, minerState);
+//                AdaMinerValidation.addChild(newNode, child2, minerState);
 //
 //                return newNode;
 //            } else {
@@ -249,26 +249,26 @@
 //                IMLog sublog = log.clone();
 //                if (filterLog(sublog, logInfo.getDfg())) {
 //
-//                    AdaMiner.debug(" fall through: tau loop strict", minerState);
+//                    AdaMinerValidation.debug(" fall through: tau loop strict", minerState);
 //                    //making a tau loop split makes sense
 //                    Block loop = new AbstractBlock.XorLoop("");
-//                    AdaMiner.addNode(tree, loop);
+//                    AdaMinerValidation.addNode(tree, loop);
 //
 //                    {
-//                        Node body = AdaMiner.mineNode(sublog, tree, minerState);
-//                        AdaMiner.addChild(loop, body, minerState);
+//                        Node body = AdaMinerValidation.mineNode(sublog, tree, minerState);
+//                        AdaMinerValidation.addChild(loop, body, minerState);
 //                    }
 //
 //                    {
 //                        Node redo = new AbstractTask.Automatic("tau");
-//                        AdaMiner.addNode(tree, redo);
-//                        AdaMiner.addChild(loop, redo, minerState);
+//                        AdaMinerValidation.addNode(tree, redo);
+//                        AdaMinerValidation.addChild(loop, redo, minerState);
 //                    }
 //
 //                    {
 //                        Node exit = new AbstractTask.Automatic("tau");
-//                        AdaMiner.addNode(tree, exit);
-//                        AdaMiner.addChild(loop, exit, minerState);
+//                        AdaMinerValidation.addNode(tree, exit);
+//                        AdaMinerValidation.addChild(loop, exit, minerState);
 //                    }
 //
 //                    return loop;
@@ -341,26 +341,26 @@
 //                }
 //
 //                if (sublog.size() > log.size()) {
-//                    AdaMiner.debug(" fall through: tau loop", minerState);
+//                    AdaMinerValidation.debug(" fall through: tau loop", minerState);
 //                    //making a tau loop split makes sense
 //                    Block loop = new AbstractBlock.XorLoop("");
-//                    AdaMiner.addNode(tree, loop);
+//                    AdaMinerValidation.addNode(tree, loop);
 //
 //                    {
-//                        Node body = AdaMiner.mineNode(new IMLogImpl(sublog, log.getClassifier()), tree, minerState);
-//                        AdaMiner.addChild(loop, body, minerState);
+//                        Node body = AdaMinerValidation.mineNode(new IMLogImpl(sublog, log.getClassifier()), tree, minerState);
+//                        AdaMinerValidation.addChild(loop, body, minerState);
 //                    }
 //
 //                    {
 //                        Node redo = new AbstractTask.Automatic("tau");
-//                        AdaMiner.addNode(tree, redo);
-//                        AdaMiner.addChild(loop, redo, minerState);
+//                        AdaMinerValidation.addNode(tree, redo);
+//                        AdaMinerValidation.addChild(loop, redo, minerState);
 //                    }
 //
 //                    {
 //                        Node exit = new AbstractTask.Automatic("tau");
-//                        AdaMiner.addNode(tree, exit);
-//                        AdaMiner.addChild(loop, exit, minerState);
+//                        AdaMinerValidation.addNode(tree, exit);
+//                        AdaMinerValidation.addChild(loop, exit, minerState);
 //                    }
 //
 //                    return loop;
@@ -415,10 +415,10 @@
 //                return null;
 //            }
 //
-//            AdaMiner.debug(" fall through: flower model", minerState);
+//            AdaMinerValidation.debug(" fall through: flower model", minerState);
 //
 //            Block loopNode = new AbstractBlock.XorLoop("");
-//            AdaMiner.addNode(tree, loopNode);
+//            AdaMinerValidation.addNode(tree, loopNode);
 //
 //            //body: xor/activity
 //            Block xorNode;
@@ -426,25 +426,25 @@
 //                xorNode = loopNode;
 //            } else {
 //                xorNode = new AbstractBlock.Xor("");
-//                AdaMiner.addNode(tree, xorNode);
-//                AdaMiner.addChild(loopNode, xorNode, minerState);
+//                AdaMinerValidation.addNode(tree, xorNode);
+//                AdaMinerValidation.addChild(loopNode, xorNode, minerState);
 //            }
 //
 //            for (XEventClass activity : logInfo.getActivities()) {
 //                Node child = new AbstractTask.Manual(activity.toString());
-//                AdaMiner.addNode(tree, child);
-//                AdaMiner.addChild(xorNode, child, minerState);
+//                AdaMinerValidation.addNode(tree, child);
+//                AdaMinerValidation.addChild(xorNode, child, minerState);
 //            }
 //
 //            //redo: tau
 //            Node body = new AbstractTask.Automatic("tau");
-//            AdaMiner.addNode(tree, body);
-//            AdaMiner.addChild(loopNode, body, minerState);
+//            AdaMinerValidation.addNode(tree, body);
+//            AdaMinerValidation.addChild(loopNode, body, minerState);
 //
 //            //exit: tau
 //            Node tau2 = new AbstractTask.Automatic("tau");
-//            AdaMiner.addNode(tree, tau2);
-//            AdaMiner.addChild(loopNode, tau2, minerState);
+//            AdaMinerValidation.addNode(tree, tau2);
+//            AdaMinerValidation.addChild(loopNode, tau2, minerState);
 //
 //            return loopNode;
 //        }
@@ -455,15 +455,15 @@
 //
 //        public Node fallThrough(IMLog log, IMLogInfo logInfo, ProcessTree tree, MinerState minerState) {
 //
-//            AdaMiner.debug(" fall through: flower model", minerState);
+//            AdaMinerValidation.debug(" fall through: flower model", minerState);
 //
 //            Block loopNode = new AbstractBlock.XorLoop("");
-//            AdaMiner.addNode(tree, loopNode);
+//            AdaMinerValidation.addNode(tree, loopNode);
 //
 //            //body: tau
 //            Node body = new AbstractTask.Automatic("tau");
-//            AdaMiner.addNode(tree, body);
-//            AdaMiner.addChild(loopNode, body, minerState);
+//            AdaMinerValidation.addNode(tree, body);
+//            AdaMinerValidation.addChild(loopNode, body, minerState);
 //
 //            //redo: xor/activity
 //            Block xorNode;
@@ -471,19 +471,19 @@
 //                xorNode = loopNode;
 //            } else {
 //                xorNode = new AbstractBlock.Xor("");
-//                AdaMiner.addNode(tree, xorNode);
-//                AdaMiner.addChild(loopNode, xorNode, minerState);
+//                AdaMinerValidation.addNode(tree, xorNode);
+//                AdaMinerValidation.addChild(loopNode, xorNode, minerState);
 //            }
 //
 //            for (XEventClass activity : logInfo.getActivities()) {
 //                Node child = new AbstractTask.Manual(activity.toString());
-//                AdaMiner.addNode(tree, child);
-//                AdaMiner.addChild(xorNode, child, minerState);
+//                AdaMinerValidation.addNode(tree, child);
+//                AdaMinerValidation.addChild(xorNode, child, minerState);
 //            }
 //
 //            Node tau2 = new AbstractTask.Automatic("tau");
-//            AdaMiner.addNode(tree, tau2);
-//            AdaMiner.addChild(loopNode, tau2, minerState);
+//            AdaMinerValidation.addNode(tree, tau2);
+//            AdaMinerValidation.addChild(loopNode, tau2, minerState);
 //
 //            return loopNode;
 //        }

@@ -1,4 +1,4 @@
-package org.eduprom.miners.adaptiveNoise;
+package org.eduprom.partitioning.trunk;
 
 import org.deckfour.xes.classification.XEventNameClassifier;
 import org.deckfour.xes.model.XLog;
