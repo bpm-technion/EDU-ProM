@@ -2,7 +2,9 @@ package org.eduprom.miners;
 
 import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XTrace;
-import org.eduprom.entities.Trace;
+import org.eduprom.exceptions.LogFileNotFoundException;
+import org.eduprom.exceptions.MiningException;
+import org.eduprom.utils.PetrinetHelper;
 import org.processmining.processtree.ProcessTree;
 import org.processmining.processtree.impl.AbstractBlock;
 import org.processmining.processtree.impl.AbstractTask;
@@ -10,10 +12,9 @@ import org.processmining.processtree.impl.ProcessTreeImpl;
 
 import static org.processmining.ptconversions.pn.ProcessTree2Petrinet.PetrinetWithMarkings;
 
-/**
- * Created by ydahari on 22/10/2016.
- */
 public class EnumeratePaths extends AbstractPetrinetMiner {
+
+    private ProcessTree discoveredProcessTree;
 
     private String[] getActivities(XTrace trace){
         String[] activities = new String[trace.size()];
@@ -26,12 +27,12 @@ public class EnumeratePaths extends AbstractPetrinetMiner {
         return activities;
     }
 
-    public EnumeratePaths(String filename) throws Exception {
+    public EnumeratePaths(String filename) throws LogFileNotFoundException {
 		super(filename);
 	}
 
     @Override
-    protected PetrinetWithMarkings minePetrinet() throws Exception {
+    protected PetrinetWithMarkings minePetrinet() throws MiningException {
         ProcessTree pt = new ProcessTreeImpl();
         AbstractBlock.Xor root = new AbstractBlock.Xor("root");
         pt.addNode(root);
@@ -49,9 +50,12 @@ public class EnumeratePaths extends AbstractPetrinetMiner {
             }
         }
 
-        PetrinetWithMarkings petrinetWithMarkings =  petrinetHelper.ConvertToPetrinet(pt);
-        return petrinetWithMarkings;
+        discoveredProcessTree = pt;
+
+        return  PetrinetHelper.ConvertToPetrinet(pt);
     }
 
-
+    public ProcessTree getDiscoveredProcessTree(){
+        return discoveredProcessTree;
+    }
 }

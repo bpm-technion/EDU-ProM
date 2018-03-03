@@ -1,49 +1,50 @@
 package org.eduprom.miners;
 
 
-import org.deckfour.xes.model.XLog;
-import org.processmining.log.algorithms.LowFrequencyFilterAlgorithm;
-import org.processmining.log.parameters.LowFrequencyFilterParameters;
+import org.eduprom.exceptions.LogFileNotFoundException;
+import org.eduprom.exceptions.MiningException;
+import org.eduprom.exceptions.ParsingException;
+import org.eduprom.utils.PetrinetHelper;
 import org.processmining.plugins.InductiveMiner.mining.*;
 import org.processmining.plugins.InductiveMiner.plugins.IMPetriNet;
 import org.processmining.models.graphbased.directed.petrinet.impl.PetrinetImpl;
 import org.processmining.models.semantics.petrinet.Marking;
+import org.processmining.plugins.InductiveMiner.plugins.IMProcessTree;
+import org.processmining.plugins.inductiveVisualMiner.export.ExportModel;
+import org.processmining.processtree.ProcessTree;
+
+import java.util.logging.Level;
 
 import static org.processmining.ptconversions.pn.ProcessTree2Petrinet.PetrinetWithMarkings;
 
 public class InductiveMiner extends AbstractPetrinetMiner {
 
-	protected MiningParametersIM _parameters;
+	protected MiningParameters parameters;
 
-	public InductiveMiner(String filename) throws Exception {
+	public InductiveMiner(String filename, MiningParameters parameters) throws LogFileNotFoundException {
 		super(filename);
-		_parameters = new MiningParametersIM();
-	}
-
-	public InductiveMiner(String filename, MiningParametersIM parameters) throws Exception {
-		super(filename);
-		_parameters = parameters;
+		this.parameters = parameters;
 	}
 
 
 
 	@Override
-	protected PetrinetWithMarkings minePetrinet() throws Exception {
+	protected PetrinetWithMarkings minePetrinet() throws MiningException {
+		this.logHelper.printLogGrouped(Level.INFO, this.log);
+
 		logger.info("Started mining a petri nets using inductive miner");
-		Object[] res = IMPetriNet.minePetriNet(log, _parameters, getCanceller());
-		PetrinetWithMarkings pn = new PetrinetWithMarkings();
-		pn.petrinet = (PetrinetImpl)res[0];
-		pn.initialMarking = (Marking)res[1];
-		pn.finalMarking = (Marking)res[2];
+		ProcessTree processTree = IMProcessTree.mineProcessTree(log, parameters, getCanceller());
+		PetrinetWithMarkings pn = PetrinetHelper.ConvertToPetrinet(processTree);
+		ExportModel.exportProcessTree(this.getPromPluginContext(), processTree, "abc");
+		//Object[] res = IMPetriNet.minePetriNet(log, parameters, getCanceller());
+
+		logger.info(String.format("Process tree: %s", processTree.toString()));
 
 		return pn;
 	}
-
+	/*
 	@Override
-	protected void readLog() throws Exception {
-		XLog log = logHelper.Read(filename);
-		LowFrequencyFilterParameters params = new LowFrequencyFilterParameters(log);
-		params.setThreshold(20);
-		this.log = (new LowFrequencyFilterAlgorithm()).apply(getPromPluginContext(), log, params);
-	}
+	protected void readLog() throws ParsingException {
+		super.readLog();
+	}*/
 }

@@ -1,9 +1,13 @@
 package org.eduprom.miners;
 
+import com.google.common.base.Stopwatch;
 import org.apache.commons.io.FilenameUtils;
+import org.eduprom.exceptions.LogFileNotFoundException;
+import org.eduprom.exceptions.MiningException;
+import org.eduprom.exceptions.ParsingException;
 import org.eduprom.utils.LogHelper;
-import org.eduprom.utils.TraceHelper;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -14,33 +18,42 @@ import org.processmining.contexts.cli.CLIPluginContext;
 import org.processmining.framework.packages.PackageManager.Canceller;
 import org.deckfour.xes.model.XLog;
 
-/**
- * Created by ydahari on 22/10/2016.
+/***
+ * First layer of miner abstraction.
+ * Responsible for general mining tasks such as reading the event log etc.
  */
 public abstract class AbstractMiner implements IMiner {
 	
 	protected static final Logger logger = Logger.getLogger(AbstractMiner.class.getName());
 
+	//region private members
+
     private String name;
     private CLIContext promContext;
     private CLIPluginContext promPluginContext;
-    private Canceller canceller = ()-> false;
+
+    //endregion
+
+    //region protected members
 
     protected String filename;
     protected LogHelper logHelper;
     protected XLog log;
+    protected Canceller canceller = ()-> false;
+    private long elapsedMiliseconds;
+
+    //endregion
 
     //region constructors
 
-    public AbstractMiner(String filename) throws Exception
-    {
+    public AbstractMiner(String filename) throws LogFileNotFoundException {
         name = getClass().getSimpleName();
         this.filename = filename;
         logHelper = new LogHelper();
         promContext = new org.processmining.contexts.cli.CLIContext();
         promPluginContext = new CLIPluginContext(promContext, getName());
 
-        logHelper.CheckFile(filename);
+        logHelper.checkFile(filename);
     }
 
     //endregion
@@ -50,16 +63,22 @@ public abstract class AbstractMiner implements IMiner {
     @Override
     public void mine() {
         try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
             logger.info(String.format("Started training the log file: %s using the algorithm: %s",
                     filename, getName()));
             readLog();
-            logHelper.PrintLogGrouped(Level.FINE, log);
-            logger.info("Read event log successfully");
+            //logHelper.printLogGrouped(Level.FINE, log);
+            logger.info(String.format("reading event log finished successfully,log size: %s", log.size()));
 
             mineSpecific();
             logger.info(String.format("Training the log file: %s using the algorithm: %s has completed successfully"
                     , filename, getName()));
-        } catch (Exception e) {
+            stopwatch.stop();
+            this.elapsedMiliseconds = stopwatch.elapsed(TimeUnit.MILLISECONDS);
+
+
+
+        } catch (MiningException e) {
             String message = String.format("Training the log file: %s using the algorithm: %s has failed"
                     , filename, getName());
             logger.log(Level.SEVERE, message, e);
@@ -70,8 +89,6 @@ public abstract class AbstractMiner implements IMiner {
     public String getName() {
         return name;
     }
-
-
 
     //endregion
 
@@ -88,13 +105,19 @@ public abstract class AbstractMiner implements IMiner {
     protected Canceller getCanceller(){
         return canceller;
     }
-    protected void readLog() throws Exception{
+
+    protected void readLog() throws ParsingException {
         if (this.log == null){
-            this.log = logHelper.Read(filename);
+            this.log = logHelper.read(filename);
         }
     }
 
-    protected abstract void mineSpecific() throws Exception;
+    protected abstract void mineSpecific() throws MiningException;
+
+    @Override
+    public void setLog(XLog log) {
+        this.log = log;
+    }
 
     protected String getOutputPath(){
         return String.format("./Output/%s_%s" ,
@@ -106,6 +129,10 @@ public abstract class AbstractMiner implements IMiner {
         return new XEventNameClassifier();
     }
 
+    @Override
+    public long getElapsedMiliseconds() {
+        return elapsedMiliseconds;
+    }
+
     //endregion
 }
-

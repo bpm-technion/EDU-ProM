@@ -1,18 +1,16 @@
 package org.eduprom.miners.alpha;
 
+import org.eduprom.exceptions.LogFileNotFoundException;
 import org.processmining.alphaminer.parameters.AlphaVersion;
 
-/**
- * Created by ydahari on 4/12/2017.
- */
 public class AlphaPlusPlus extends Alpha {
 
-    public AlphaPlusPlus(String filename) throws Exception {
+    public AlphaPlusPlus(String filename) throws LogFileNotFoundException {
         super(filename);
     }
 
     @Override
-    public AlphaVersion GetVersion(){
+    public AlphaVersion getVersion(){
         return AlphaVersion.PLUS_PLUS;
     }
 }

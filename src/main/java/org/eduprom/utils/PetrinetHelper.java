@@ -1,5 +1,11 @@
 package org.eduprom.utils;
 
+import com.google.common.collect.Lists;
+import org.deckfour.xes.model.XTrace;
+import org.deckfour.xes.model.impl.XLogImpl;
+import org.eduprom.exceptions.ConformanceCheckException;
+import org.eduprom.exceptions.ExportFailedException;
+import org.eduprom.exceptions.ProcessTreeConversionException;
 import org.eduprom.miners.AbstractMiner;
 import nl.tue.astar.AStarException;
 import org.deckfour.xes.classification.XEventClass;
@@ -7,6 +13,7 @@ import org.deckfour.xes.classification.XEventClassifier;
 import org.deckfour.xes.info.XLogInfo;
 import org.deckfour.xes.info.XLogInfoFactory;
 import org.deckfour.xes.model.XLog;
+import org.eduprom.miners.adaptiveNoise.IntermediateMiners.NoiseInductiveMiner;
 import org.processmining.datapetrinets.DataPetriNet;
 import org.processmining.framework.connections.ConnectionCannotBeObtained;
 import org.processmining.framework.plugin.PluginContext;
@@ -41,10 +48,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
-/**
- * Created by ydahari on 4/12/2017.
- */
 public class PetrinetHelper {
 
     protected static final Logger logger = Logger.getLogger(AbstractMiner.class.getName());
@@ -145,7 +150,7 @@ public class PetrinetHelper {
 
     //region public methods
 
-    public PNRepResult getAlignment(XLog log, PetrinetGraph net, Marking initialMarking, Marking finalMarking) throws Exception {
+    public PNRepResult getAlignment(XLog log, PetrinetGraph net, Marking initialMarking, Marking finalMarking) {
 
         Map<Transition, Integer> costMOS = constructMOSCostFunction(net);
         XEventClassifier eventClassifier = this.eventClassifier;
@@ -163,7 +168,8 @@ public class PetrinetHelper {
 
         parameters.setGUIMode(false);
         parameters.setCreateConn(false);
-        parameters.setNumThreads(3);
+        parameters.setNumThreads(4);
+
         ((CostBasedCompleteParam) parameters).setMaxNumOfStates(5000);
 
         PNRepResult result = null;
@@ -177,41 +183,74 @@ public class PetrinetHelper {
         return result;
     }
 
-    public AlignmentPrecGenRes getConformance(XLog log, Petrinet net, PNRepResult alignment, Marking initialMarking, Marking finalMarking) throws Exception{
+    public AlignmentPrecGenRes getConformance(XLog log, Petrinet net, PNRepResult alignment, Marking initialMarking, Marking finalMarking){
         AlignmentPrecGen alignmentPrecGen = new AlignmentPrecGen();
         TransEvClassMapping mapping = constructMapping(net, log, eventClassifier);
         return alignmentPrecGen.measureConformanceAssumingCorrectAlignment(pluginContext, mapping, alignment,
                 net, initialMarking, false);
     }
 
-    public double getPrecision(XLog log, Petrinet net, PNRepResult alignment, Marking initialMarking, Marking finalMarking) throws IllegalTransitionException, ConnectionCannotBeObtained {
+    public double getPrecision(XLog log, Petrinet net, PNRepResult alignment, Marking initialMarking, Marking finalMarking) throws ConformanceCheckException {
 
         AlignETCPlugin etcPlugin = new AlignETCPlugin();
         TransEvClassMapping mapping = constructMapping(net, log, eventClassifier);
         EvClassLogPetrinetConnection connection = new EvClassLogPetrinetConnection("", net, log, eventClassifier, mapping);
         PNMatchInstancesRepResult pNMatchInstancesRepResult = toPNMatchInstancesRepResult(alignment);
-        AlignETCResult res = etcPlugin.checkAlignETCSilent(pluginContext, log,
-                net, initialMarking, finalMarking, connection, pNMatchInstancesRepResult, null, null);
+        AlignETCResult res = null;
+        try {
+            res = etcPlugin.checkAlignETCSilent(pluginContext, log,
+                    net, initialMarking, finalMarking, connection, pNMatchInstancesRepResult, null, null);
+        } catch (ConnectionCannotBeObtained | IllegalTransitionException e) {
+            throw new ConformanceCheckException(e);
+        }
+
         return res.ap;
     }
 
-    public void PrintResults(PNRepResult results){
+    public double getGeneralization(XLog log, ProcessTree2Petrinet.PetrinetWithMarkings pt) throws ConformanceCheckException, ProcessTreeConversionException {
+        List<List<XTrace>> partitions = Lists.partition((XLogImpl)log, log.size() / 10);
+
+        List<Double> values = new ArrayList<>();
+        for(List<XTrace> testTraces: partitions){
+            List<XTrace> trainTraces = partitions.stream()
+                    .filter(x -> x != testTraces)
+                    .flatMap(Collection::stream).collect(Collectors.toList());
+            XLog trainLog = new XLogImpl(log.getAttributes());
+            trainLog.addAll(trainTraces);
+
+            XLog testLog = new XLogImpl(log.getAttributes());
+            trainLog.addAll(testTraces);
+
+            //ProcessTree2Petrinet.PetrinetWithMarkings pt = ConvertToPetrinet(processTree);
+
+            PNRepResult alignment = getAlignment(testLog, pt.petrinet, pt.initialMarking, pt.finalMarking);
+            double fitness = Double.parseDouble(alignment.getInfo().get("Move-Model Fitness").toString());
+            values.add(fitness);
+        }
+
+        return values.stream().mapToDouble(x->x.floatValue()).sum() / values.size();
+    }
+
+    public void printResults(PNRepResult results){
         for(String key : results.getInfo().keySet()) {
             logger.info(String.format("Alignment checking: key= %s, value= %s", key, results.getInfo().get(key)));
         }
     }
 
-    public void PrintResults(AlignmentPrecGenRes conformance){
+    public void printResults(AlignmentPrecGenRes conformance){
         logger.info(String.format("Conformance checking, precision %f", conformance.getPrecision()));
         logger.info(String.format("Conformance checking, generalization %f", conformance.getGeneralization()));
     }
 
-    public static ProcessTree2Petrinet.PetrinetWithMarkings ConvertToPetrinet(ProcessTree processTree) throws Exception {
-        ProcessTree2Petrinet.PetrinetWithMarkings pn = ProcessTree2Petrinet.convert(processTree);
-        return pn;
+    public static ProcessTree2Petrinet.PetrinetWithMarkings ConvertToPetrinet(ProcessTree processTree) throws ProcessTreeConversionException {
+        try {
+            return ProcessTree2Petrinet.convert(processTree);
+        } catch (Exception e) {
+            throw new ProcessTreeConversionException(e);
+        }
     }
 
-    public void Export(Petrinet petrinet, String path) throws IOException {
+    public void export(Petrinet petrinet, String path) throws ExportFailedException {
         //fake export from prom plugin :)
         GraphVisualizerPlugin p = new GraphVisualizerPlugin();
         DotPanel panel = (DotPanel)p.apply(pluginContext, petrinet);
@@ -219,14 +258,22 @@ public class PetrinetHelper {
         File file = new File(String.format("%s.png", path));
         validateDirectory(file);
 
-        new DotPNGExportPlugin().exportAsPNG(pluginContext, dot, file);
+        try {
+            new DotPNGExportPlugin().exportAsPNG(pluginContext, dot, file);
+        } catch (IOException e) {
+            throw new ExportFailedException(e);
+        }
     }
 
-    public void ExportPnml(Petrinet petrinet, String path) throws Exception {
+    public void exportPnml(Petrinet petrinet, String path) throws ExportFailedException {
         File file = new File(String.format("%s.pnml", path));
         validateDirectory(file);
-        new org.processmining.datapetrinets.io.DataPetriNetExporter().exportPetriNetToPNMLFile(pluginContext,
-                DataPetriNet.Factory.fromPetrinet(petrinet), file);
+        try {
+            new org.processmining.datapetrinets.io.DataPetriNetExporter().exportPetriNetToPNMLFile(pluginContext,
+                    DataPetriNet.Factory.fromPetrinet(petrinet), file);
+        } catch (Exception e) {
+            throw new ExportFailedException(e);
+        }
     }
 
     //endregion

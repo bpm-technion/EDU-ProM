@@ -1,9 +1,13 @@
 package org.eduprom.miners.synthesis.cutsMiners;
 
+import org.eduprom.exceptions.LogFileNotFoundException;
+import org.eduprom.exceptions.MiningException;
+import org.eduprom.exceptions.ProcessTreeConversionException;
 import org.eduprom.miners.AbstractPetrinetMiner;
 import org.eduprom.miners.synthesis.entities.ProcessTreeCuts;
 import org.deckfour.xes.classification.XEventNameClassifier;
 import org.deckfour.xes.model.XLog;
+import org.eduprom.utils.PetrinetHelper;
 import org.processmining.framework.packages.PackageManager;
 import org.processmining.plugins.InductiveMiner.conversion.ReduceTree;
 import org.processmining.plugins.InductiveMiner.efficienttree.EfficientTreeReduce;
@@ -25,15 +29,12 @@ import org.processmining.processtree.Node;
 import org.processmining.processtree.ProcessTree;
 import org.processmining.processtree.impl.AbstractBlock;
 import org.processmining.processtree.impl.AbstractTask;
-import org.processmining.ptconversions.pn.ProcessTree2Petrinet;
+
 import static org.processmining.ptconversions.pn.ProcessTree2Petrinet.PetrinetWithMarkings;
 
 import java.util.Iterator;
 
 
-/**
- * Created by ydahari on 4/13/2017.
- */
 public class InductiveCutMiner extends AbstractPetrinetMiner implements ICutsProcessTreeMiner {
 
     private MiningParametersIM _parameters = new MiningParametersIM();
@@ -48,20 +49,25 @@ public class InductiveCutMiner extends AbstractPetrinetMiner implements ICutsPro
         }
     };
 
-    public InductiveCutMiner(String filename) throws Exception {
+    public InductiveCutMiner(String filename) throws LogFileNotFoundException {
         super(filename);
     }
 
     @Override
-    protected PetrinetWithMarkings minePetrinet() throws Exception {
+    protected PetrinetWithMarkings minePetrinet() throws MiningException {
         logger.info("Started mining a petri nets using inductive cut miner");
-        ProcessTreeCuts pt = Mine(log);
-        ProcessTree2Petrinet.PetrinetWithMarkings pn = petrinetHelper.ConvertToPetrinet(pt.processTree);
+        ProcessTreeCuts pt = mineCutProcessTree(log);
+        PetrinetWithMarkings pn = null;
+        try {
+            pn = PetrinetHelper.ConvertToPetrinet(pt.processTree);
+        } catch (ProcessTreeConversionException e) {
+            throw new MiningException(e);
+        }
         return pn;
 
     }
 
-    public ProcessTreeCuts Mine(XLog xLog) {
+    public ProcessTreeCuts mineCutProcessTree(XLog xLog) {
         IMLog log = new IMLogImpl(xLog, new XEventNameClassifier());
         MiningParameters parameters = new MiningParametersIM();
         //repair life cycle if necessary
