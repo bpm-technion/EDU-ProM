@@ -9,7 +9,7 @@ import org.deckfour.xes.model.impl.XAttributeMapImpl;
 import org.deckfour.xes.model.impl.XLogImpl;
 import org.deckfour.xes.model.impl.XTraceImpl;
 import org.eduprom.exceptions.MiningException;
-import org.eduprom.miners.adaptiveNoise.AdaMinerValidation;
+import org.eduprom.miners.adaptiveNoise.AdaMiner;
 import org.processmining.plugins.InductiveMiner.MultiSet;
 import org.processmining.plugins.InductiveMiner.Sets;
 import org.processmining.plugins.InductiveMiner.dfgOnly.Dfg;
@@ -110,7 +110,7 @@ public class FallThroughIMadaptiveNoise implements FallThrough {
                         //recurse
                         Node child1 = null;
                         try {
-                            child1 = AdaMinerValidation.mineNode(log1, tree, minerState);
+                            child1 = AdaMiner.mineNode(log1, tree, minerState);
                         } catch (MiningException e) {
                             throw new RuntimeException(e);
                         }
@@ -118,7 +118,7 @@ public class FallThroughIMadaptiveNoise implements FallThrough {
 
                         Node child2 = null;
                         try {
-                            child2 = AdaMinerValidation.mineNode(log2, tree, minerState);
+                            child2 = AdaMiner.mineNode(log2, tree, minerState);
                         } catch (MiningException e) {
                             throw new RuntimeException(e);
                         }
@@ -238,7 +238,7 @@ public class FallThroughIMadaptiveNoise implements FallThrough {
 
                 Node child1 = null;
                 try {
-                    child1 = AdaMinerValidation.mineNode(log1, tree, minerState);
+                    child1 = AdaMiner.mineNode(log1, tree, minerState);
                 } catch (MiningException e) {
                     throw new RuntimeException(e);
                 }
@@ -246,7 +246,7 @@ public class FallThroughIMadaptiveNoise implements FallThrough {
 
                 Node child2 = null;
                 try {
-                    child2 = AdaMinerValidation.mineNode(log2, tree, minerState);
+                    child2 = AdaMiner.mineNode(log2, tree, minerState);
                 } catch (MiningException e) {
                     throw new RuntimeException(e);
                 }
@@ -278,7 +278,7 @@ public class FallThroughIMadaptiveNoise implements FallThrough {
                     {
                         Node body = null;
                         try {
-                            body = AdaMinerValidation.mineNode(sublog, tree, minerState);
+                            body = AdaMiner.mineNode(sublog, tree, minerState);
                         } catch (MiningException e) {
                             throw new RuntimeException(e);
                         }
@@ -372,7 +372,7 @@ public class FallThroughIMadaptiveNoise implements FallThrough {
                     {
                         Node body = null;
                         try {
-                            body = AdaMinerValidation.mineNode(new IMLogImpl(sublog, log.getClassifier()), tree, minerState);
+                            body = AdaMiner.mineNode(new IMLogImpl(sublog, log.getClassifier()), tree, minerState);
                         } catch (MiningException e) {
                             throw new RuntimeException(e);
                         }

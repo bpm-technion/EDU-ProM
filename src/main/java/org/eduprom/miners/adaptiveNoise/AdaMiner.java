@@ -65,33 +65,26 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 
 
-public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchmarkableMiner {
+public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMiner {
 
-    protected final static Logger logger = Logger.getLogger(AbstractMiner.class.getName());
-
-
+    //region private/protected members
     protected MiningParametersNoise parameters;
-    protected AdaptiveNoiseConfiguration adaptiveNoiseConfiguration;
-    protected ProcessTree bestTree;
-    protected ConformanceInfo conformanceInfo;
+    private AdaptiveNoiseConfiguration adaptiveNoiseConfiguration;
+    private ProcessTree bestTree;
+    private ConformanceInfo conformanceInfo;
 
-
-    protected static Map<Float, MinerState> parametersIMfMap;
-    protected static Map<String, ProcessTree> discoveredTrees = new HashMap<>();
-    protected static CLIPluginContext promContext = new CLIPluginContext(new org.processmining.contexts.cli.CLIContext(), "");
+    protected static final Logger logger = Logger.getLogger(AbstractMiner.class.getName());
+    private static Map<Float, MinerState> parametersIMfMap;
+    private static Map<String, ProcessTree> discoveredTrees = new HashMap<>();
+    private static CLIPluginContext promContext = new CLIPluginContext(new org.processmining.contexts.cli.CLIContext(), "");
     protected static PetrinetHelper  petrinetHelper =
             new PetrinetHelper(promContext, new XEventNameClassifier());
-    protected static LogHelper logHelper = new LogHelper();
-
     protected XLog validationLog;
+    //endregion
 
-    protected ConformanceInfo getConformanceInfo(ProcessTree tree,  XLog trainingLog, MinerState minerState) throws MiningException {
-        return getConformanceInfo(tree,  trainingLog, validationLog, minerState);
-    }
-
-    public AdaMinerValidation(String filename, AdaptiveNoiseConfiguration adaptiveNoiseConfiguration) throws LogFileNotFoundException {
+    //region ctor
+    public AdaMiner(String filename, AdaptiveNoiseConfiguration adaptiveNoiseConfiguration) throws LogFileNotFoundException {
         super(filename);
-        //this.noiseThreshold = noiseThreshold;
         parametersIMfMap = new HashMap<>();
         discoveredTrees = new HashMap<>();
         this.adaptiveNoiseConfiguration = adaptiveNoiseConfiguration;
@@ -102,9 +95,11 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
                     , this.canceller));
         }
     }
+    //endregion
 
+    //region discovery and get cut logic
 
-    public ProcessTree discover(XLog xlog) throws MiningException {
+    private ProcessTree discover(XLog xlog) throws MiningException {
         logger.info(String.format("Miners with %d noise thresholds %s are optional",
                 adaptiveNoiseConfiguration.getNoiseThresholds().length, parametersIMfMap.keySet().stream()
                         .map(x-> String.valueOf(x.floatValue())).collect(Collectors.joining (","))));
@@ -113,13 +108,11 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
                 weights.getFitnessWeight(), weights.getPrecisionWeight(), weights.getGeneralizationWeight()));
 
         IMLog log = new IMLogImpl(xlog, new XEventNameClassifier());
-        //repair life cycle if necessary
         if (parameters.isRepairLifeCycle()) {
             log = LifeCycles.preProcessLog(log);
         }
 
         //create process tree
-
         ProcessTree tree = new ProcessTreeImpl();
         MinerState minerState = new MinerState(parameters, this.canceller);
         Node root = mineNode(log, tree, minerState);
@@ -147,9 +140,6 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
             }
         }));
 
-        for(Map.Entry<ProcessTree, ConformanceInfo> entry : treeConformanceInfoEntry.entrySet()){
-
-        }
         Map.Entry<ProcessTree, ConformanceInfo> bestModel = treeConformanceInfoEntry.entrySet().stream()
                 .max(Comparator.comparing(x->x.getValue().getPsi())).get();
         this.bestTree = bestModel.getKey();
@@ -183,23 +173,12 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
         return this.bestTree;
     }
 
-    protected static ConformanceInfo getConformanceInfo(ProcessTree tree,  XLog trainingLog,XLog validationLog, MinerState minerState) throws MiningException {
-        return AdaBenchmarkValidation.getPsi(petrinetHelper, tree, trainingLog, validationLog,
-                ((MiningParametersNoise)minerState.parameters).getWeights());
-    }
-    /*
-    protected static Pair<Float, MinerState> obtainBestMinerState(XLog cLog) throws MiningException {
-        Map.Entry<Float, Pair<MinerState, ConformanceInfo>> entry = obtainMinerState(cLog).entrySet().stream()
-                .max(Comparator.comparing(x->x.getValue().getValue().getPsi())).get();
-        return new Pair<Float, MinerState>(entry.getKey(), entry.getValue().getKey());
-    }*/
 
-    protected static Pair<Float, MinerState> obtainMinerState(XLog cLog) throws MiningException {
+    private static Pair<Float, MinerState> obtainMinerState(XLog cLog) throws MiningException {
         Map<Float, Pair<MinerState, List<ConformanceInfo>>> values = new HashMap<>();
         parametersIMfMap.entrySet().forEach(x-> values.put(x.getKey(), new Pair<>(x.getValue(), new ArrayList<>())));
-        //SortedList<Map.Entry<Float, MinerState>> l = new SortedList<Map.Entry<Float, MinerState>>(values, null);
 
-        final int partitionSize = (int)Math.round(cLog.size() / 30.0) == 0 ? 1 : (int)Math.round(cLog.size() / 30.0);
+        final int partitionSize = getPartitionSize(cLog);
 
         boolean append = discoveredTrees.isEmpty();
         Map<String, Pair<ProcessTree, ConformanceInfo>> found = new HashMap<>();
@@ -233,7 +212,6 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
                         continue;
                     }
 
-                    //logger.info(String.format("evaluating conformance for noise threshold: %f", mfEntry.getKey()));
                     ConformanceInfo conformanceInfo = getConformanceInfo(subLogTree, trainingLog, validationLog, mfEntry.getValue());
                     if (getLowerBound(lowerBoundConformance) > getUpperBound(conformanceInfo)) {
                         continue;
@@ -276,6 +254,19 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
                 .map(x-> new Pair<Float, MinerState>(x.getKey(), x.getValue().getKey())).get();
     }
 
+    //endregion
+
+    //region private helpers
+
+    private ConformanceInfo getConformanceInfo(ProcessTree tree,  XLog trainingLog, MinerState minerState) throws MiningException {
+        return getConformanceInfo(tree,  trainingLog, validationLog, minerState);
+    }
+
+    private static ConformanceInfo getConformanceInfo(ProcessTree tree,  XLog trainingLog,XLog validationLog, MinerState minerState) throws MiningException {
+        return AdaBenchmarkValidation.getPsi(petrinetHelper, tree, trainingLog, validationLog,
+                ((MiningParametersNoise)minerState.parameters).getWeights());
+    }
+
     private static double getUpperBound(ConformanceInfo conformanceInfo){
         return conformanceInfo.getFitnessWeight() * conformanceInfo.getFitness() +
                 conformanceInfo.getPrecisionWeight() *conformanceInfo.getPrecision() +
@@ -287,6 +278,13 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
                 conformanceInfo.getPrecisionWeight() *conformanceInfo.getPrecision() +
                 conformanceInfo.getGeneralizationWeight() * 0.0;
     }
+
+    private static int getPartitionSize(XLog cLog) {
+        //if log size is too small (possible since we are partitioning the log), take partition size to be 1.
+        return (int)Math.round(cLog.size() / 10.0) == 0 ? 1 : (int)Math.round(cLog.size() / 10.0);
+    }
+
+    //endregion
 
     //region IM static methods
 
@@ -314,10 +312,6 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
         }
         XLog cLog = log.toXLog();
 
-
-        //Iterator<Map.Entry<Float, Pair<MinerState, ConformanceInfo>>> it = obtainMinerState(cLog).entrySet().stream()
-        //        .sorted(Comparator.comparingDouble(x -> 1 - x.getValue().getValue().getPsi())).iterator();
-
         logger.log(Level.FINE,"started evaluating miners");
 
         Map.Entry<Float, Pair<MinerState, ConformanceInfo>> best = null;
@@ -341,16 +335,6 @@ public class AdaMinerValidation extends AbstractPetrinetMiner implements IBenchm
         Cut cut = findCut(cIMLog, cLogInfo, cMinerState);
         logger.log(Level.FINE, String.format("Chosen cut of %f noise threshold", entry.getKey()));
         return handleCut(cMinerState, cut, cLogInfo, cIMLog, tree);
-        /*
-        if (best == null){
-            best = entry;
-            bestCut = cut;
-        }
-
-        if (cut != null && cut.isValid()){
-            logger.info(String.format("Chosen cut of %f noise threshold", entry.getKey()));
-            return handleCut(cMinerState, cut, cLogInfo, cIMLog, tree);
-        }*/
     }
 
     private static Node handleCut(MinerState minerState, Cut cut, IMLogInfo logInfo, IMLog log, ProcessTree tree) throws MiningException {

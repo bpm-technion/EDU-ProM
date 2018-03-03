@@ -1,4 +1,4 @@
-package org.eduprom.miners.adaptiveNoise;
+package org.eduprom.miners.adaptiveNoise.trunk;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;

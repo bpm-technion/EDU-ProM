@@ -1,7 +1,6 @@
 package org.eduprom.benchmarks;
 
 import org.eduprom.exceptions.LogFileNotFoundException;
-import org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner;
 
 import java.util.List;
 

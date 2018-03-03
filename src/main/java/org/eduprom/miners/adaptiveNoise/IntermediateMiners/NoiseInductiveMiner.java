@@ -6,7 +6,7 @@ import org.eduprom.benchmarks.configuration.Weights;
 import org.eduprom.exceptions.LogFileNotFoundException;
 import org.eduprom.exceptions.MiningException;
 import org.eduprom.miners.InductiveMiner;
-import org.eduprom.partitioning.trunk.AdaBenchmark;
+import org.eduprom.miners.adaptiveNoise.benchmarks.AdaBenchmarkValidation;
 import org.eduprom.miners.adaptiveNoise.conformance.ConformanceInfo;
 import org.eduprom.miners.adaptiveNoise.filters.FilterAlgorithm;
 import org.eduprom.miners.adaptiveNoise.filters.FilterResult;
@@ -87,8 +87,8 @@ public class NoiseInductiveMiner extends InductiveMiner implements IBenchmarkabl
 
 	@Override
 	public void evaluate() throws MiningException {
-		setConformanceInfo(AdaBenchmark.getPsi(petrinetHelper, this.result.getProcessTree(), this.log, Weights.getUniform()));
-		logger.info(String.format("Inductive Miner Infrequent - conformance: %s, tree: %s", this.getConformanceInfo(), this.result.getProcessTree()));
+		//setConformanceInfo(AdaBenchmarkValidation.getPsi(petrinetHelper, this.result.getProcessTree(), this.log, this.log, Weights.getUniform()));
+		//logger.info(String.format("Inductive Miner Infrequent - conformance: %s, tree: %s", this.getConformanceInfo(), this.result.getProcessTree()));
 	}
 
 	public float getNoiseThreshold() {

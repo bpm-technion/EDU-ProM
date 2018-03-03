@@ -4,9 +4,7 @@ package org.eduprom.miners.adaptiveNoise.benchmarks;
 import au.com.bytecode.opencsv.CSVReader;
 import au.com.bytecode.opencsv.CSVWriter;
 import org.deckfour.xes.model.XLog;
-import org.deckfour.xes.model.impl.XLogImpl;
 import org.eduprom.benchmarks.IBenchmark;
-import org.eduprom.benchmarks.IBenchmarkableMiner;
 import org.eduprom.benchmarks.configuration.Weights;
 import org.eduprom.entities.CrossValidationPartition;
 import org.eduprom.exceptions.ExportFailedException;
@@ -14,15 +12,13 @@ import org.eduprom.exceptions.LogFileNotFoundException;
 import org.eduprom.exceptions.MiningException;
 import org.eduprom.exceptions.ParsingException;
 import org.eduprom.miners.AbstractMiner;
-import org.eduprom.miners.adaptiveNoise.AdaMinerValidation;
-import org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner;
+import org.eduprom.miners.adaptiveNoise.AdaMiner;
+import org.eduprom.miners.adaptiveNoise.trunk.AdaptiveNoiseMiner;
 import org.eduprom.miners.adaptiveNoise.IntermediateMiners.NoiseInductiveMiner;
 import org.eduprom.miners.adaptiveNoise.conformance.ConformanceInfo;
-import org.eduprom.miners.adaptiveNoise.entities.TreeChanges;
 import org.eduprom.utils.LogHelper;
 import org.eduprom.utils.PetrinetHelper;
 import org.processmining.plugins.petrinet.replayresult.PNRepResult;
-import org.processmining.plugins.pnalignanalysis.conformance.AlignmentPrecGenRes;
 import org.processmining.processtree.ProcessTree;
 import org.processmining.ptconversions.pn.ProcessTree2Petrinet;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
@@ -30,10 +26,8 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -137,7 +131,7 @@ public class AdaBenchmarkValidation implements IBenchmark<AdaptiveNoiseMiner, No
         }};
     }
 
-    private void processAdaptiveNoise(AdaMinerValidation adaMiner, BenchmarkLogs benchmarkLogs, Weights weights) throws MiningException {
+    private void processAdaptiveNoise(AdaMiner adaMiner, BenchmarkLogs benchmarkLogs, Weights weights) throws MiningException {
         //mine the models
         adaMiner.setLog(benchmarkLogs.getTrainLog());
         adaMiner.setValidationLog(benchmarkLogs.getValidationLog());
@@ -167,18 +161,18 @@ public class AdaBenchmarkValidation implements IBenchmark<AdaptiveNoiseMiner, No
 
             for (Weights weights: adaptiveNoiseBenchmarkConfiguration.getWeights()) {
 
-                AdaMinerValidation adaMinerImi =
-                        new AdaMinerValidation(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, false));
+                AdaMiner adaMinerImi =
+                        new AdaMiner(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, false));
                 processAdaptiveNoise(adaMinerImi, benchmarkLogs, weights);
 
                 List<NoiseInductiveMiner> targets = getTargets(filename);
                 List<NoiseInductiveMiner> miners = null;
 
-                AdaMinerValidation adaMinerImiTag = null;
+                AdaMiner adaMinerImiTag = null;
                 NoiseInductiveMiner preBestBaseline = null;
                 if (includePreFiter) {
                     adaMinerImiTag =
-                            new AdaMinerValidation(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, true));
+                            new AdaMiner(filename, this.adaptiveNoiseBenchmarkConfiguration.getAdaptiveNoiseConfiguration(weights, true));
                     processAdaptiveNoise(adaMinerImiTag, benchmarkLogs, weights);
 
                     miners = targets.stream().filter(NoiseInductiveMiner::isFilterPreExecution).collect(Collectors.toList());
@@ -229,7 +223,7 @@ public class AdaBenchmarkValidation implements IBenchmark<AdaptiveNoiseMiner, No
         return bestBaseline;
     }
 
-    private void sendResult(AdaMinerValidation source,
+    private void sendResult(AdaMiner source,
                             NoiseInductiveMiner inductiveMiner,
                             String filename,
                             List<NoiseInductiveMiner> miners) throws ExportFailedException {

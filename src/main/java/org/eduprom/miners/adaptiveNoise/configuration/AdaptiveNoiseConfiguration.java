@@ -1,7 +1,7 @@
 package org.eduprom.miners.adaptiveNoise.configuration;
 
 import org.eduprom.benchmarks.configuration.Weights;
-import org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner;
+import org.eduprom.miners.adaptiveNoise.trunk.AdaptiveNoiseMiner;
 import org.eduprom.partitioning.ILogSplitter;
 
 public class AdaptiveNoiseConfiguration {

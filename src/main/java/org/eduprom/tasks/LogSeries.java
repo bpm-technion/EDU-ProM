@@ -1,7 +1,6 @@
 package org.eduprom.tasks;
 
-import org.eduprom.miners.IMiner;
-import org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner;
+import org.eduprom.miners.adaptiveNoise.trunk.AdaptiveNoiseMiner;
 import org.eduprom.miners.adaptiveNoise.configuration.AdaptiveNoiseConfiguration;
 
 import java.io.FileInputStream;

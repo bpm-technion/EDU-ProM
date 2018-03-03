@@ -13,7 +13,7 @@ import org.eduprom.exceptions.ExportFailedException;
 import org.eduprom.exceptions.LogFileNotFoundException;
 import org.eduprom.exceptions.ParsingException;
 import org.eduprom.miners.AbstractMiner;
-import org.eduprom.miners.adaptiveNoise.AdaptiveNoiseMiner;
+import org.eduprom.miners.adaptiveNoise.trunk.AdaptiveNoiseMiner;
 import org.eduprom.miners.adaptiveNoise.conformance.ConformanceInfo;
 import org.eduprom.miners.adaptiveNoise.IntermediateMiners.NoiseInductiveMiner;
 import org.eduprom.miners.adaptiveNoise.entities.TreeChanges;

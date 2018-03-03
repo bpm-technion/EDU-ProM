@@ -25,23 +25,13 @@ public class Benchmark {
 
     	logManager.readConfiguration(new FileInputStream("./app.properties"));
     	logger.info("started application");
-		//Arrays.stream()logger.getHandlers()
-
-    	//2017 good: 3, (4?), (5?), 9
 
         try {
 			AdaptiveNoiseBenchmarkConfiguration configuration = AdaptiveNoiseBenchmarkConfiguration.getBuilder()
-					.addLogs(Logs.getBuilder().addNumbers(8).addFormat(Logs.CONTEST_2016).build())
-					//.addLogs(Logs.getBuilder().addNumbers(5).addFormat(dfciMay).build())
-					//.setLogSplitter(InductiveLogSplitting.class)
-					//.addLogs(Logs.getBuilder().addNumbers(1, 10).addFormat(dfciApril).build())
+					.addLogs(Logs.getBuilder().addFile(dfciApril).build())
 					.setNoiseThresholds(NoiseThreshold.uniform(0.2f))
-					.addWeights(Weights.getRangeGeneralization(0.2))
-					//.addWeights(new Weights(0.0, 1.0, 0.0))
-					//.addWeights(Weights.getRange(0.2))
-					//.setPartitionNoiseFilter(0.2f)
+					.addWeights(Weights.getUniform())
 					.build();
-			//IBenchmark benchmark = new AdaptiveNoiseBenchmark(configuration, 10);
 			new AdaBenchmarkValidation(configuration, 10).run();
 
 
