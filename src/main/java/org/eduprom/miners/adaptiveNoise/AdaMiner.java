@@ -100,6 +100,19 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
     //region discovery and get cut logic
 
     private ProcessTree discover(XLog xlog) throws MiningException {
+        if (validationLog == null) {
+            List<CrossValidationPartition> origin =  this.logHelper.crossValidationSplit(log, Math.min(log.size(), 10));
+            CrossValidationPartition[] validationPartition = CrossValidationPartition.take(origin, 1);
+            origin = CrossValidationPartition.exclude(origin, validationPartition);
+
+            XLog validationLog = CrossValidationPartition.bind(validationPartition).getLog();
+            XLog trainingLog = CrossValidationPartition.bind(origin).getLog();
+
+            this.log = trainingLog;
+            this.validationLog = validationLog;
+        }
+
+
         logger.info(String.format("Miners with %d noise thresholds %s are optional",
                 adaptiveNoiseConfiguration.getNoiseThresholds().length, parametersIMfMap.keySet().stream()
                         .map(x-> String.valueOf(x.floatValue())).collect(Collectors.joining (","))));
@@ -582,6 +595,13 @@ public class AdaMiner extends AbstractPetrinetMiner implements IBenchmarkableMin
 
     public void setValidationLog(XLog validationLog) {
         this.validationLog = validationLog;
+    }
+
+    @Override
+    public void evaluate() throws MiningException {
+        setConformanceInfo(AdaBenchmarkValidation.getPsi(getHelper(), getProcessTree(),
+                log, validationLog,
+                adaptiveNoiseConfiguration.getWeights()));
     }
 
     //endregion

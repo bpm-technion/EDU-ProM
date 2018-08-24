@@ -54,7 +54,11 @@ public abstract class AbstractPetrinetMiner extends AbstractMiner {
 
     public void export() throws ExportFailedException {
         petrinetHelper.export(petrinetWithMarkings.petrinet, getOutputPath());
+        logger.info(String.format("petrinet image was exported for model %s to path: %s",
+                this.getName(), this.getOutputPath()));
         petrinetHelper.exportPnml(petrinetWithMarkings.petrinet, getOutputPath());
+        logger.info(String.format("petrinet pnml was exported for model %s to path: %s",
+                this.getName(), this.getOutputPath()));
     }
 
     @Override
